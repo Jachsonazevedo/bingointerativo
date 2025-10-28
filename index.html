@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schola da Mente - Bingo</title>
+    <!-- 1. Tailwind CSS para estilos rápidos e responsivos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Tone.js para sintetizar sons (sem arquivos externos) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <!-- 3. Estilos CSS Embutidos -->
+    <style>
+        /* Fonte limpa e legível */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+            background-color: #f0f4f8;
+        }
+
+        /* Globo de Sorteio */
+        #globo {
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(145deg, #007BFF, #00C6FF); /* Novo gradiente azul */
+            border: 8px solid white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2), inset 0 5px 15px rgba(255,255,255,0.4);
+        }
+
+        /* Grade de Números Sorteados */
+        .numero-grid {
+            width: 40px;
+            height: 40px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+            color: #555;
+            transition: all 0.3s ease;
+        }
+
+        .numero-grid.sorteado {
+            background-color: #0d9488;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* Estilos para a Cartela (Principal e Pré-visualização) */
+        .cartela-base {
+            background-color: #fff;
+            border: 4px solid #1d4ed8;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 1rem;
+        }
+        
+        .cartela-preview {
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+        }
+        .cartela-preview:hover {
+            transform: scale(1.05);
+            border-color: #f97316; /* Laranja no hover */
+        }
+        
+        .cartela-header {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #1d4ed8;
+            letter-spacing: 0.2em;
+        }
+
+        .cartela-celula {
+            width: 70px;
+            height: 70px;
+            font-size: 1.75rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #93c5fd;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer; /* Essencial para marcação manual */
+        }
+        
+        /* Células na tela de pré-visualização são menores */
+        .cartela-preview .cartela-celula {
+            width: 50px;
+            height: 50px;
+            font-size: 1.25rem;
+        }
+
+        .cartela-celula.marcado {
+            background-color: #f97316; /* Laranja */
+            color: white;
+            transform: rotate(5deg) scale(1.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .cartela-celula.livre {
+            background-color: #ec4899; /* Cor-de-rosa */
+            color: white;
+            font-size: 1.25rem;
+            line-height: 1.2;
+            cursor: default;
+        }
+        
+        .cartela-preview .cartela-celula.livre {
+            font-size: 0.8rem;
+        }
+
+        /* Botões */
+        .btn {
+            padding: 1rem 1.5rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-iniciar {
+            background-color: #16a34a;
+            color: white;
+        }
+        .btn-iniciar:hover {
+            background-color: #15803d;
+        }
+        .btn-iniciar:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .btn-resetar {
+            background-color: #dc2626;
+            color: white;
+        }
+        .btn-resetar:hover {
+            background-color: #b91c1c;
+        }
+
+        /* Painel Social (Bots) */
+        #painel-social {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        
+        .bot-status {
+            font-size: 1.15rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .bot-status .status.falta-1 {
+            color: #dc2626;
+            animation: pulse 1s infinite;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            padding: 2.5rem;
+            border: 8px solid #f97316;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: zoomIn 0.3s ease-out;
+        }
+        
+        /* Animações */
+        @keyframes zoomIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        
+        /* Animação de "shake" para clique errado */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        .shake {
+            animation: shake 0.3s ease-out;
+        }
+        
+        /* Confete */
+        .confetti {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 200;
+            overflow: hidden;
+        }
+        .confetto {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background-color: #f00;
+            opacity: 0.7;
+            animation: fall 5s linear infinite;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-blue-50 text-gray-800 p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- CABEÇALHO -->
+        <header class="text-center my-6">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-blue-800">Schola da Mente - Bingo</h1>
+        </header>
+
+        <!-- PAINEL DE CONTROLE (PRÉ-JOGO) -->
+        <div id="painel-configuracoes" class="bg-white p-6 rounded-xl shadow-lg mb-8 flex flex-col md:flex-row gap-6 items-center justify-center">
+            <div>
+                <label for="nome-jogador" class="block text-xl font-bold text-gray-700 mb-2">Seu Nome:</label>
+                <input type="text" id="nome-jogador" placeholder="Digite seu nome" class="p-3 text-xl border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="modo-jogo" class="block text-xl font-bold text-gray-700 mb-2">Modo de Jogo:</label>
+                <select id="modo-jogo" class="p-3 text-xl border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500">
+                    <option value="rapido">Rápido (3x3, 30 bolas)</option>
+                    <option value="classico">Clássico (5x5, 75 bolas)</option>
+                </select>
+            </div>
+            <button id="btn-iniciar" class="btn btn-iniciar self-center md:self-end mt-4 md:mt-0">
+                Escolher Cartela
+            </button>
+        </div>
+        
+        <!-- TELA DE ESCOLHA DE CARTELA (NOVO) -->
+        <div id="tela-escolha" class="text-center" style="display: none;">
+            <h2 id="titulo-escolha" class="text-3xl font-bold text-gray-800 mb-6"></h2>
+            <div id="container-previews" class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <!-- Cartelas de pré-visualização serão injetadas aqui -->
+            </div>
+        </div>
+
+        <!-- NOVO: TÍTULO DA RODADA -->
+        <h2 id="titulo-rodada" class="text-center text-3xl md:text-4xl font-bold text-orange-600 mb-6" style="display: none;"></h2>
+
+        <!-- ÁREA PRINCIPAL DO JOGO -->
+        <main id="area-jogo" class="flex flex-col-reverse md:flex-row gap-8" style="display: none;">
+
+            <!-- Coluna Esquerda/Principal: Globo e Cartela do Jogador -->
+            <div class="flex-grow md:w-2/3">
+                <!-- Globo -->
+                <div class="flex justify-center mb-8">
+                    <div id="globo" class="rounded-full text-white text-6xl font-bold flex items-center justify-center shadow-xl">
+                        --
+                    </div>
+                </div>
+
+                <!-- Container da Cartela (agora só 1) -->
+                <div id="container-cartelas-jogador" class="flex justify-center">
+                    <!-- A cartela escolhida será injetada aqui -->
+                </div>
+            </div>
+
+            <!-- Coluna Direita/Lateral: Grade de Sorteio e Bots -->
+            <aside class="md:w-1/3 space-y-6">
+                <!-- Painel Social (Bots) -->
+                <div id="painel-social" class="bg-white p-5 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 pb-2">Outros Jogadores na Sala</h2>
+                    <div id="lista-bots" class="space-y-3">
+                        <!-- Status dos bots será injetado aqui -->
+                    </div>
+                </div>
+
+                <!-- NOVO: Ordem do Sorteio -->
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Números Sorteados na Sequência</h2>
+                    <div id="ordem-sorteio-container" class="bg-white p-4 rounded-xl shadow-lg h-32 overflow-y-auto flex flex-wrap gap-2">
+                        <!-- Números sorteados em ordem -->
+                    </div>
+                </div>
+
+                <!-- Grade de Números Sorteados (REMOVIDO) -->
+                <!-- 
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Números Sorteados (Grade)</h2>
+                    <div id="grade-sorteio" class="bg-white p-4 rounded-xl shadow-lg">
+                    </div>
+                </div>
+                 -->
+
+                <!-- Botão de Resetar (Pós-Jogo) -->
+                <button id="btn-resetar" class="btn btn-resetar w-full" style="display: none;">
+                    Jogar Novamente
+                </button>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Modal de Fim de Jogo -->
+    <div id="modal-fim-jogo" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2 id="modal-titulo" class="text-orange-600">BINGO!</h2>
+            <!-- NOVO: Imagem do Prêmio -->
+            <img id="modal-imagem-premio" src="https://placehold.co/200x200/28a745/white?text=Pr%C3%AAmio" alt="Imagem do Prêmio" class="w-40 h-40 mx-auto my-4 rounded-lg shadow-md object-cover" style="display: none;">
+            <p id="modal-mensagem" class="text-lg">Parabéns! Você venceu!</p>
+            <button id="btn-fechar-modal" class="btn btn-iniciar mt-4">
+                OK
+            </button>
+        </div>
+    </div>
+    
+    <!-- Efeito de Confete -->
+    <div id="confetti-container" class="confetti"></div>
+
+    <!-- 4. JavaScript Embutido -->
+            <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 1. CONFIGURAÇÃO INICIAL ---
+
+            // Elementos da DOM
+            const btnIniciar = document.getElementById('btn-iniciar');
+            const btnResetar = document.getElementById('btn-resetar');
+            const btnFecharModal = document.getElementById('btn-fechar-modal');
+            
+            const painelConfiguracoes = document.getElementById('painel-configuracoes');
+            const telaEscolha = document.getElementById('tela-escolha');
+            const tituloEscolha = document.getElementById('titulo-escolha');
+            const containerPreviews = document.getElementById('container-previews');
+            
+            const areaJogo = document.getElementById('area-jogo');
+            // NOVO
+            const tituloRodadaEl = document.getElementById('titulo-rodada'); 
+            const ordemSorteioContainer = document.getElementById('ordem-sorteio-container');
+
+            const globoEl = document.getElementById('globo');
+            
+            // REMOVIDO:
+            // const gradeSorteioEl = document.getElementById('grade-sorteio'); 
+            
+            const containerCartelasEl = document.getElementById('container-cartelas-jogador');
+            const listaBotsEl = document.getElementById('lista-bots');
+            
+            const modalFimJogo = document.getElementById('modal-fim-jogo');
+            const modalTitulo = document.getElementById('modal-titulo');
+            const modalMensagem = document.getElementById('modal-mensagem');
+            const confettiContainer = document.getElementById('confetti-container');
+
+            const modoJogoEl = document.getElementById('modo-jogo');
+            const nomeJogadorEl = document.getElementById('nome-jogador');
+
+            // Estado do Jogo
+            let estado = {
+                nomeJogador: '',
+                modo: 'rapido',
+                jogoEmAndamento: false,
+                numerosDisponiveis: [],
+                numerosSorteados: new Set(),
+                cartelasJogador: [], // Só terá 1 cartela
+                bots: [],
+                intervaloSorteio: null,
+                limiteNumeros: 30,
+                colunasBingo: {},
+                premioAtual: null // NOVO
+            };
+            
+            // Prêmios simbólicos (NOVO - Atualizado com imagens)
+            const premiosSimbólicos = [
+                { nome: "R$ 500,00", imagemUrl: "https://placehold.co/200x200/28a745/white?text=R$500" },
+                { nome: "Um Celular Novo!", imagemUrl: "https://placehold.co/200x200/007bff/white?text=Celular" },
+                { nome: "Uma Viagem!", imagemUrl: "https://placehold.co/200x200/ffc107/black?text=Viagem" },
+                { nome: "Um Lindo Bezerro!", imagemUrl: "https://placehold.co/200x200/6f4e37/white?text=Bezerro" },
+                { nome: "Um Carneiro!", imagemUrl: "https://placehold.co/200x200/eeeeee/black?text=Carneiro" },
+                { nome: "Uma TV 8K!", imagemUrl: "https://placehold.co/200x200/333333/white?text=TV+8K" },
+                { nome: "Uma Cesta de Café da Manhã!", imagemUrl: "https://placehold.co/200x200/d2691e/white?text=Cesta" }
+            ];
+            
+            // Sintetizadores de Som
+            const sons = {
+                sorteio: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 } }).toDestination(),
+                marcar: new Tone.PluckSynth({ attackNoise: 0.5, dampening: 4000, resonance: 0.9 }).toDestination(),
+                vitoria: new Tone.PolySynth(Tone.Synth, { volume: -5, envelope: { attack: 0.05, decay: 0.5, sustain: 0.2, release: 0.5 } }).toDestination(),
+                erro: new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination() // Som de erro
+            };
+            
+            // Sintetizador de Voz (NOVO)
+            const synthVoz = window.speechSynthesis;
+            let voz = null;
+            // Carrega vozes e seleciona a pt-BR
+            function carregarVozes() {
+                const vozes = synthVoz.getVoices();
+                voz = vozes.find(v => v.lang === 'pt-BR');
+                if (!voz) {
+                    voz = vozes.find(v => v.lang.startsWith('pt-'));
+                }
+            }
+            // A lista de vozes pode demorar a carregar
+            carregarVozes();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = carregarVozes;
+            }
+
+            // --- 2. LÓGICA DE GERAÇÃO (CARTELAS, BOTS, ETC) ---
+
+            function gerarNumerosAleatorios(min, max, count) {
+                const arr = [];
+                while (arr.length < count) {
+                    const r = Math.floor(Math.random() * (max - min + 1)) + min;
+                    if (arr.indexOf(r) === -1) arr.push(r);
+                }
+                return arr;
+            }
+
+            function criarCartela(id) {
+                const cartela = { id: `cartela-${id}`, numeros: [], marcados: new Set(), padraoVitoria: false };
+                
+                if (estado.modo === 'rapido') {
+                    const numeros = gerarNumerosAleatorios(1, 30, 9);
+                    cartela.numeros = [
+                        [numeros[0], numeros[1], numeros[2]],
+                        [numeros[3], numeros[4], numeros[5]],
+                        [numeros[6], numeros[7], numeros[8]]
+                    ];
+                    cartela.dimensao = 3;
+                } else {
+                    const b = gerarNumerosAleatorios(1, 15, 5);
+                    const i = gerarNumerosAleatorios(16, 30, 5);
+                    const n = gerarNumerosAleatorios(31, 45, 4);
+                    const g = gerarNumerosAleatorios(46, 60, 5);
+                    const o = gerarNumerosAleatorios(61, 75, 5);
+                    
+                    cartela.numeros = [
+                        [b[0], i[0], n[0], g[0], o[0]],
+                        [b[1], i[1], n[1], g[1], o[1]],
+                        [b[2], i[2], 'LIVRE', g[2], o[2]],
+                        [b[3], i[3], n[2], g[3], o[3]],
+                        [b[4], i[4], n[3], g[4], o[4]]
+                    ];
+                    cartela.marcados.add('LIVRE');
+                    cartela.dimensao = 5;
+                    estado.colunasBingo = { 0: 'B', 1: 'I', 2: 'N', 3: 'G', 4: 'O' };
+                }
+                return cartela;
+            }
+            
+            function gerarBots() {
+                const nomes = ['Ana', 'Beto', 'Carlos', 'Dora', 'Edu', 'Fia'];
+                estado.bots = [];
+                for (let i = 0; i < 3; i++) {
+                    const nome = nomes[Math.floor(Math.random() * nomes.length)];
+                    nomes.splice(nomes.indexOf(nome), 1);
+                    estado.bots.push({
+                        nome: nome,
+                        cartela: criarCartela(`bot-${i}`),
+                        numerosFaltando: 99
+                    });
+                }
+                estado.bots.forEach(calcularFaltamParaBot);
+            }
+            
+            function gerarPoolNumeros() {
+                estado.numerosDisponiveis = [];
+                for (let i = 1; i <= estado.limiteNumeros; i++) {
+                    estado.numerosDisponiveis.push(i);
+                }
+                for (let i = estado.numerosDisponiveis.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [estado.numerosDisponiveis[i], estado.numerosDisponiveis[j]] = [estado.numerosDisponiveis[j], estado.numerosDisponiveis[i]];
+                }
+            }
+            
+            // --- 3. LÓGICA DE RENDERIZAÇÃO (UI) ---
+
+            /**
+             * Função genérica para renderizar uma cartela (preview ou principal)
+             */
+            function renderizarCartela(cartela, isPreview = false) {
+                const container = document.createElement('div');
+                const gridColsClass = estado.modo === 'rapido' ? 'grid-cols-3' : 'grid-cols-5';
+                
+                container.className = isPreview ? 'cartela-base cartela-preview' : 'cartela-base';
+                container.id = cartela.id;
+
+                let htmlCartela = '';
+                
+                if (estado.modo === 'classico') {
+                    htmlCartela += `<div class="grid ${gridColsClass} gap-1 mb-2">
+                        ${Object.values(estado.colunasBingo).map(letra => 
+                            `<div class="cartela-header text-center ${isPreview ? 'text-2xl' : ''}">${letra}</div>`
+                        ).join('')}
+                    </div>`;
+                }
+                
+                htmlCartela += `<div class="grid ${gridColsClass} gap-1 md:gap-2">`;
+                
+                for (let i = 0; i < cartela.dimensao; i++) {
+                    for (let j = 0; j < cartela.dimensao; j++) {
+                        const num = cartela.numeros[i][j];
+                        let classes = 'cartela-celula';
+                        if (num === 'LIVRE') classes += ' livre';
+                        
+                        htmlCartela += `
+                            <div id="celula-${cartela.id}-${num}" class="${classes}">
+                                ${num === 'LIVRE' ? 'Schola<br>Mente' : num}
+                            </div>
+                        `;
+                    }
+                }
+                htmlCartela += `</div>`;
+                container.innerHTML = htmlCartela;
+                
+                // Adiciona listeners de clique manual (NOVO) - Apenas na cartela principal
+                if (!isPreview) {
+                    for (let i = 0; i < cartela.dimensao; i++) {
+                        for (let j = 0; j < cartela.dimensao; j++) {
+                            const num = cartela.numeros[i][j];
+                            if (num !== 'LIVRE') {
+                                const celulaEl = container.querySelector(`#celula-${cartela.id}-${num}`);
+                                celulaEl.addEventListener('click', () => cliqueCelula(cartela, num, celulaEl));
+                            }
+                        }
+                    }
+                }
+                
+                return container;
+            }
+
+            /* * REMOVIDA: function renderizarGradeSorteio()
+             * A função inteira foi removida.
+             */
+
+            function renderizarPainelBots() {
+                listaBotsEl.innerHTML = '';
+                
+                // NOVO: Destacar o Jogador (Aluno)
+                if (estado.jogoEmAndamento && estado.cartelasJogador.length > 0) {
+                    const cartelaJogador = estado.cartelasJogador[0];
+                    const faltamJogador = calcularFaltam(cartelaJogador); // Usa a nova função genérica
+                    
+                    let statusTexto = `Faltam ${faltamJogador}`;
+                    let statusClass = 'status text-blue-600 font-semibold'; // Cor padrão do jogador
+                    
+                    if (faltamJogador === 1) {
+                        statusTexto = 'FALTA SÓ 1!';
+                        statusClass = 'status falta-1 font-bold';
+                    } else if (faltamJogador === 0) {
+                        statusTexto = 'BINGO!';
+                        statusClass = 'status text-green-600 font-bold';
+                    }
+                    
+                    listaBotsEl.innerHTML += `
+                        <div class="bot-status flex justify-between items-center bg-blue-100 p-2 rounded-md border-2 border-blue-500 shadow-sm">
+                            <span class="nome font-extrabold text-blue-700">${estado.nomeJogador} (Você!)</span>
+                            <span class="${statusClass}">${statusTexto}</span>
+                        </div>
+                    `;
+                }
+
+                // Renderiza os bots
+                estado.bots.sort((a, b) => a.numerosFaltando - b.numerosFaltando);
+                
+                estado.bots.forEach(bot => {
+                    let statusClass = 'status';
+                    let statusTexto = `Faltam ${bot.numerosFaltando}`;
+                    
+                    if (bot.numerosFaltando === 1) statusClass += ' falta-1 font-bold';
+                    else if (bot.numerosFaltando === 0) statusClass = 'text-green-600 font-bold';
+                    
+                    if (bot.numerosFaltando === 1) statusTexto = 'FALTA SÓ 1!';
+                    else if (bot.numerosFaltando === 0) statusTexto = 'BINGO!';
+                    
+                    listaBotsEl.innerHTML += `
+                        <div class="bot-status flex justify-between items-center">
+                            <span class="nome">${bot.nome}</span>
+                            <span class="${statusClass}">${statusTexto}</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            function atualizarGlobo(numero) {
+                const letra = estado.modo === 'classico' ? obterLetraBingo(numero) : '';
+                globoEl.innerHTML = `
+                    <div class="text-2xl -mt-4">${letra}</div>
+                    <div class="text-7xl -ml-2">${numero}</div>
+                `;
+            }
+
+            // --- 4. LÓGICA DO JOGO (NOVO FLUXO) ---
+
+            /**
+             * NOVO: Mostra a tela de escolha de cartelas
+             */
+            function mostrarTelaDeEscolha() {
+                // 1. Ler configurações
+                estado.nomeJogador = nomeJogadorEl.value || 'Jogador(a)';
+                estado.modo = modoJogoEl.value;
+                estado.limiteNumeros = estado.modo === 'rapido' ? 30 : 75;
+                
+                // NOVO: Selecionar o prêmio da rodada
+                estado.premioAtual = premiosSimbólicos[Math.floor(Math.random() * premiosSimbólicos.length)];
+                
+                // 2. Mudar UI
+                painelConfiguracoes.style.display = 'none';
+                telaEscolha.style.display = 'block';
+                tituloEscolha.textContent = `Olá, ${estado.nomeJogador}! Escolha sua cartela:`;
+                
+                // 3. Gerar e renderizar 3 cartelas de preview
+                containerPreviews.innerHTML = '';
+                for (let i = 0; i < 3; i++) {
+                    const cartelaPreview = criarCartela(`preview-${i}`);
+                    const cartelaEl = renderizarCartela(cartelaPreview, true);
+                    cartelaEl.addEventListener('click', () => selecionarCartela(cartelaPreview));
+                    containerPreviews.appendChild(cartelaEl);
+                }
+            }
+
+            /**
+             * NOVO: Chamado quando o jogador clica em uma cartela
+             */
+            function selecionarCartela(cartelaEscolhida) {
+                // 1. Definir cartela principal do jogador
+                cartelaEscolhida.id = 'jogador-1'; // Renomeia ID
+                estado.cartelasJogador = [cartelaEscolhida];
+                
+                // 2. Mudar UI
+                telaEscolha.style.display = 'none';
+                areaJogo.style.display = 'flex';
+                btnResetar.style.display = 'block';
+
+                // NOVO: Mostrar título da rodada
+                const numerosParaGanhar = estado.modo === 'rapido' ? 3 : 5;
+                tituloRodadaEl.textContent = `Rodada Valendo: ${estado.premioAtual.nome} | ${numerosParaGanhar} Números para Ganhar!`;
+                tituloRodadaEl.style.display = 'block';
+                
+                // 3. Iniciar o jogo de fato
+                iniciarJogoDeFato();
+            }
+
+            /**
+             * Inicia o jogo: prepara dados e começa o sorteio
+             */
+            function iniciarJogoDeFato() {
+                estado.jogoEmAndamento = true;
+                estado.numerosSorteados.clear();
+                globoEl.innerHTML = '...';
+
+                // 1. Gerar dados (bots, pool)
+                gerarPoolNumeros();
+                gerarBots();
+                
+                // 2. Renderizar UI do Jogo
+                // REMOVIDO: renderizarGradeSorteio();
+                renderizarPainelBots();
+                
+                // 3. Renderizar a cartela principal (escolhida)
+                containerCartelasEl.innerHTML = '';
+                const cartelaEl = renderizarCartela(estado.cartelasJogador[0], false);
+                containerCartelasEl.appendChild(cartelaEl);
+                
+                // 4. Iniciar o sorteio
+                const intervalo = estado.modo === 'rapido' ? 2500 : 4500; // Um pouco mais lento para dar tempo de marcar
+                estado.intervaloSorteio = setInterval(sortearNumero, intervalo);
+            }
+
+            function resetarJogo() {
+                clearInterval(estado.intervaloSorteio);
+                estado.jogoEmAndamento = false;
+                
+                areaJogo.style.display = 'none';
+                telaEscolha.style.display = 'none';
+                painelConfiguracoes.style.display = 'flex';
+                btnResetar.style.display = 'none';
+                modalFimJogo.style.display = 'none';
+                
+                // NOVO: Esconder título da rodada e limpar ordem do sorteio
+                tituloRodadaEl.style.display = 'none';
+                ordemSorteioContainer.innerHTML = '';
+                
+                btnIniciar.disabled = false;
+                
+                containerCartelasEl.innerHTML = '';
+                
+                // REMOVIDO:
+                // gradeSorteioEl.innerHTML = ''; 
+                
+                listaBotsEl.innerHTML = '';
+                globoEl.innerHTML = '--';
+            }
+
+            /**
+             * NOVO: Função para falar o número
+             */
+            function falarNumero(numero) {
+                let textoParaFalar = `${numero}`;
+                
+                if (estado.modo === 'classico') {
+                    const letra = obterLetraBingo(numero);
+                    textoParaFalar = `Na coluna ${letra}... número ${numero}`;
+                }
+
+                // Cancela falas anteriores para não embolar
+                synthVoz.cancel(); 
+                
+                const utterance = new SpeechSynthesisUtterance(textoParaFalar);
+                if (voz) {
+                    utterance.voice = voz; // Usa a voz pt-BR se encontrada
+                }
+                utterance.lang = 'pt-BR';
+                utterance.rate = 0.9; // Um pouco mais devagar
+                synthVoz.speak(utterance);
+            }
+
+            /**
+             * Sorteia um número do pool e atualiza o jogo.
+             */
+            function sortearNumero() {
+                if (estado.numerosDisponiveis.length === 0) {
+                    finalizarJogo(null, "Empate! Todos os números foram sorteados.");
+                    return;
+                }
+
+                const numeroSorteado = estado.numerosDisponiveis.pop();
+                estado.numerosSorteados.add(numeroSorteado);
+
+                // 1. Tocar som e Falar
+                sons.sorteio.triggerAttackRelease("C4", "8n", Tone.now());
+                falarNumero(numeroSorteado);
+
+                // 2. Atualizar UI
+                atualizarGlobo(numeroSorteado);
+                
+                // REMOVIDO:
+                // document.getElementById(`num-grid-${numeroSorteado}`).classList.add('sorteado');
+                
+                // NOVO: Adicionar à lista de ordem de sorteio
+                const letra = estado.modo === 'classico' ? obterLetraBingo(numeroSorteado) : '';
+                const numeroEl = document.createElement('span');
+                numeroEl.className = 'py-1 px-2 bg-gray-200 rounded text-gray-700 font-bold text-sm';
+                numeroEl.textContent = `${letra}${numeroSorteado}`;
+                ordemSorteioContainer.appendChild(numeroEl);
+                ordemSorteioContainer.scrollTop = ordemSorteioContainer.scrollHeight; // Auto-scroll
+                
+                // 3. Marcar para os BOTS (NÃO para o jogador)
+                estado.bots.forEach(bot => {
+                    marcarNumeroParaBot(bot.cartela, numeroSorteado);
+                });
+
+                // 4. Verificar Vencedores (agora só verifica bots, jogador vence no clique)
+                verificarVencedoresBots();
+            }
+
+            /**
+             * NOVO: Evento de clique na célula da cartela do jogador
+             */
+            function cliqueCelula(cartela, numero, elemento) {
+                if (!estado.jogoEmAndamento) return; // Jogo não começou
+
+                // 1. Já está marcado? Não faz nada.
+                if (cartela.marcados.has(numero)) return;
+                
+                // 2. Acertou? (O número já foi sorteado)
+                if (estado.numerosSorteados.has(numero)) {
+                    cartela.marcados.add(numero);
+                    elemento.classList.add('marcado');
+                    sons.marcar.triggerAttackRelease("C5", "8n", Tone.now());
+                    
+                    renderizarPainelBots(); // NOVO: Atualiza a contagem do jogador
+                    
+                    // Verificar se o jogador ganhou
+                    if (verificarPadraoVitoria(cartela)) {
+                        finalizarJogo("JOGADOR");
+                    }
+                } 
+                // 3. Errou? (Clicou em número não sorteado)
+                else {
+                    sons.erro.triggerAttackRelease("A2", "16n", Tone.now());
+                    elemento.classList.add('shake');
+                    setTimeout(() => elemento.classList.remove('shake'), 300);
+                }
+            }
+
+            /**
+             * Marca número apenas para o bot (lógica interna)
+             */
+            function marcarNumeroParaBot(cartela, numero) {
+                for (let i = 0; i < cartela.dimensao; i++) {
+                    for (let j = 0; j < cartela.dimensao; j++) {
+                        if (cartela.numeros[i][j] === numero) {
+                            cartela.marcados.add(numero);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            /**
+             * NOVO: Verifica apenas os bots (chamado após sorteio)
+             */
+            function verificarVencedoresBots() {
+                if (!estado.jogoEmAndamento) return;
+
+                for (const bot of estado.bots) {
+                    if (verificarPadraoVitoria(bot.cartela)) {
+                        finalizarJogo(bot); // Bot venceu
+                        return;
+                    }
+                    calcularFaltamParaBot(bot); // Atualiza contagem
+                }
+                renderizarPainelBots(); // Atualiza UI dos bots
+            }
+            
+            function verificarPadraoVitoria(cartela) {
+                const N = cartela.dimensao;
+                
+                // Linhas
+                for (let i = 0; i < N; i++) {
+                    let linhaCompleta = true;
+                    for (let j = 0; j < N; j++) {
+                        if (!cartela.marcados.has(cartela.numeros[i][j])) {
+                            linhaCompleta = false; break;
+                        }
+                    }
+                    if (linhaCompleta) return true;
+                }
+                
+                // Colunas
+                for (let j = 0; j < N; j++) {
+                    let colunaCompleta = true;
+                    for (let i = 0; i < N; i++) {
+                        if (!cartela.marcados.has(cartela.numeros[i][j])) {
+                            colunaCompleta = false; break;
+                        }
+                    }
+                    if (colunaCompleta) return true;
+                }
+                
+                // Diagonais
+                let diag1Completa = true;
+                let diag2Completa = true;
+                for (let i = 0; i < N; i++) {
+                    if (!cartela.marcados.has(cartela.numeros[i][i])) diag1Completa = false;
+                    if (!cartela.marcados.has(cartela.numeros[i][N - 1 - i])) diag2Completa = false;
+                }
+                if (diag1Completa || diag2Completa) return true;
+
+                return false;
+            }
+
+            /**
+             * NOVO: Função genérica para calcular quantos faltam
+             */
+            function calcularFaltam(cartela) {
+                const N = cartela.dimensao;
+                let minFaltando = N + 1;
+
+                const padroes = [];
+                // Linhas
+                for (let i = 0; i < N; i++) padroes.push(cartela.numeros[i]);
+                // Colunas
+                for (let j = 0; j < N; j++) {
+                    const coluna = [];
+                    for (let i = 0; i < N; i++) coluna.push(cartela.numeros[i][j]);
+                    padroes.push(coluna);
+                }
+                // Diagonais
+                const diag1 = [], diag2 = [];
+                for (let i = 0; i < N; i++) {
+                    diag1.push(cartela.numeros[i][i]);
+                    diag2.push(cartela.numeros[i][N - 1 - i]);
+                }
+                padroes.push(diag1); padroes.push(diag2);
+                
+                for (const padrao of padroes) {
+                    let faltam = 0;
+                    for (const num of padrao) {
+                        if (!cartela.marcados.has(num)) faltam++;
+                    }
+                    if (faltam < minFaltando) minFaltando = faltam;
+                }
+                return minFaltando;
+            }
+
+            /**
+             * Função antiga, agora usa a nova genérica
+             */
+            function calcularFaltamParaBot(bot) {
+                bot.numerosFaltando = calcularFaltam(bot.cartela);
+            }
+
+            function finalizarJogo(vencedor, mensagemEmpate = null) {
+                clearInterval(estado.intervaloSorteio);
+                estado.jogoEmAndamento = false;
+                btnIniciar.disabled = true;
+                synthVoz.cancel(); // Para a voz
+                
+                const imgPremioEl = document.getElementById('modal-imagem-premio');
+
+                if (mensagemEmpate) {
+                    modalTitulo.textContent = 'FIM DE JOGO';
+                    modalTitulo.className = 'text-gray-700';
+                    modalMensagem.textContent = mensagemEmpate;
+                    imgPremioEl.style.display = 'none'; // Esconde imagem
+                } else if (vencedor === "JOGADOR") {
+                    // JOGADOR VENCEU (PRÊMIO COM IMAGEM)
+                    const premio = estado.premioAtual; // NOVO: Usar o prêmio já definido
+                    
+                    modalTitulo.textContent = 'BINGO!';
+                    modalTitulo.className = 'text-orange-600';
+                    modalMensagem.textContent = `PARABÉNS, ${estado.nomeJogador}! Você venceu e ganhou: ${premio.nome}!`;
+                    
+                    // Mostra a imagem do prêmio
+                    imgPremioEl.src = premio.imagemUrl;
+                    imgPremioEl.alt = `Imagem de ${premio.nome}`;
+                    imgPremioEl.style.display = 'block';
+                    
+                    sons.vitoria.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '1n', Tone.now());
+                    iniciarConfete();
+                    
+                } else {
+                    // BOT VENCEU
+                    modalTitulo.textContent = 'BINGO!';
+                    modalTitulo.className = 'text-red-600';
+                    modalMensagem.textContent = `Ah... O jogador '${vencedor.nome}' venceu esta rodada! Mais sorte na próxima!`;
+                    imgPremioEl.style.display = 'none'; // Esconde imagem
+                    
+                    sons.vitoria.triggerAttackRelease(['C4', 'D#4', 'G4'], '1n', Tone.now());
+                }
+                
+                modalFimJogo.style.display = 'flex';
+            }
+
+            // --- 5. UTILITÁRIOS E EFEITOS ---
+
+            function obterLetraBingo(numero) {
+                if (numero <= 15) return 'B';
+                if (numero <= 30) return 'I';
+                if (numero <= 45) return 'N';
+                if (numero <= 60) return 'G';
+                if (numero <= 75) return 'O';
+                return '';
+            }
+            
+            function iniciarConfete() {
+                confettiContainer.innerHTML = '';
+                confettiContainer.style.display = 'block';
+                const cores = ['#f97316', '#1d4ed8', '#16a34a', '#ec4899', '#fde047'];
+
+                for (let i = 0; i < 100; i++) {
+                    const confetto = document.createElement('div');
+                    confetto.className = 'confetto';
+                    confetto.style.left = `${Math.random() * 100}vw`;
+                    confetto.style.backgroundColor = cores[Math.floor(Math.random() * cores.length)];
+                    confetto.style.animationDelay = `${Math.random() * 3}s`;
+                    confetto.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    confetto.style.height = `${Math.random() * 15 + 10}px`;
+                    confetto.style.width = `${Math.random() * 8 + 5}px`;
+                    confettiContainer.appendChild(confetto);
+                }
+                
+                setTimeout(() => {
+                    confettiContainer.style.display = 'none';
+                    confettiContainer.innerHTML = '';
+                }, 5000);
+            }
+
+            // --- 6. EVENT LISTENERS ---
+
+            btnIniciar.addEventListener('click', () => {
+                // Inicia os sons no contexto de um clique do usuário (necessário para navegadores)
+                Tone.start();
+                // Carrega vozes caso ainda não tenham carregado
+                if (!voz) carregarVozes();
+                
+                mostrarTelaDeEscolha();
+            });
+            
+            btnResetar.addEventListener('click', resetarJogo);
+            
+            btnFecharModal.addEventListener('click', () => {
+                modalFimJogo.style.display = 'none';
+                if (confettiContainer.style.display === 'block') {
+                    confettiContainer.style.display = 'none';
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>
+
+
+
