@@ -2,853 +2,1117 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Schola da Mente - Bingo da Mente</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Schola da Mente - Bingo</title>
     <style>
-        /* --- Configurações Globais --- */
         :root {
-            --gold: #FFD700;
-            --gold-dark: #B8860B;
-            --royal-blue: #1e3a8a; 
-            --royal-dark: #0f172a;
+            /* 1. PALETA E ESTILO GLOBAL */
+            --color-bg-main: #1A3DB8;        /* azul royal */
+            --color-bg-dark: #10163a;
+            --color-gold: #F5C542;           /* dourado */
+            --color-gold-dark: #b88a0e;
+            --color-red: #D7263D;            /* BINGO */
+            --color-white: #FFFFFF;
+            --color-card-blue: #243b86;
+            --color-cell-blue: #314796;
+            --color-cell-marked: #F5C542;
+            
+            --shadow-hard: 0 10px 25px rgba(0,0,0,0.6);
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--royal-dark);
-            color: white;
-            height: 100dvh; 
-            width: 100vw;
-            overflow: hidden; 
-            touch-action: manipulation;
-            background-image: radial-gradient(circle at 50% 30%, #172554 0%, #020617 100%);
-            -webkit-user-select: none;
-            user-select: none;
+            margin: 0;
+            font-family: var(--font-family);
+            background: radial-gradient(circle at top, #2a46cf, #10163a);
+            color: var(--color-white);
+            height: 100vh;
+            overflow: hidden; /* App controla o scroll */
         }
 
-        .vegas-font { font-family: 'Righteous', cursive; letter-spacing: 1px; }
-
-        /* --- CARTELA GIGANTE E RESPONSIVA --- */
-        .cards-wrapper {
+        #app {
+            min-height: 100vh;
+            height: 100dvh;
             display: flex;
-            flex-direction: row;
+            align-items: center; /* Centraliza verticalmente */
+            justify-content: center;
+            padding: 0.5rem;
+            box-sizing: border-box;
+            overflow-y: auto; /* Scroll apenas se necessário dentro do app */
+        }
+
+        /* --- BOTÕES 3D --- */
+        .btn {
+            display: inline-flex;
             justify-content: center;
             align-items: center;
-            gap: 1vmin;
-            width: 100%;
-            height: 100%;
-            padding: 0.5rem; 
+            padding: 0.7rem 1.2rem;
+            border-radius: 999px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.4);
+            transition: transform 0.1s, box-shadow 0.1s, filter 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0.25rem;
         }
 
-        .bingo-card {
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+        }
+
+        .btn-principal {
+            background: linear-gradient(135deg, var(--color-gold), #ffdd66);
+            color: #20150a;
+            border: 1px solid #fff5c2;
+        }
+
+        .btn-secundario {
+            background: linear-gradient(135deg, #18285d, #26377a);
+            color: var(--color-white);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .btn-toggle {
+            background: rgba(255,255,255,0.1);
+            color: #ddd;
+            border: 1px solid rgba(255,255,255,0.2);
+            flex: 1;
+        }
+        .btn-toggle.ativo {
+            background: var(--color-gold);
+            color: #20150a;
+            font-weight: bold;
+            box-shadow: 0 0 10px var(--color-gold);
+            border-color: #fff;
+        }
+
+        /* --- CARDS E CONTAINER --- */
+        .card {
+            background: rgba(16, 22, 58, 0.9);
+            border: 2px solid var(--color-gold);
+            border-radius: 16px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            animation: fadeIn 0.4s ease-out;
+            backdrop-filter: blur(5px);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        .titulo-app {
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            color: var(--color-gold);
+            text-align: center;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        .subtitulo-app {
+            font-size: clamp(1rem, 4vw, 1.4rem);
+            text-align: center;
+            margin: 0;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        /* Input e Displays */
+        .input-nome {
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 2px solid var(--color-gold);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            outline: none;
+        }
+        .label-nome { font-size: 1.1rem; margin-bottom: -0.5rem; text-align: center; }
+
+        .saldo-container {
+            background: rgba(0,0,0,0.4);
+            padding: 0.8rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .saldo-container strong { color: var(--color-gold); font-size: 1.4rem; }
+
+        /* Configurações */
+        .grupo-opcao { margin-bottom: 0.5rem; }
+        .grupo-titulo { margin: 0 0 0.5rem; color: #ccc; font-size: 0.9rem; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+        /* --- TELA DO JOGO (LAYOUT REVISADO) --- */
+        .jogo-container {
+            width: 100%;
+            max-width: 900px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; 
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Topo: Nome destacado e Tabela */
+        .jogo-header-area {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .area-nome {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: left;
+        }
+        .nome-header {
+            font-size: clamp(1.4rem, 4vw, 1.8rem);
+            color: var(--color-gold);
+            font-weight: 900;
+            margin: 0;
+            text-transform: uppercase;
+            text-shadow: 0 2px 2px rgba(0,0,0,0.5);
+            line-height: 1.1;
+        }
+        .nome-label { font-size: 0.8rem; opacity: 0.8; letter-spacing: 1px; }
+
+        /* Tabela de Stats */
+        .tabela-stats {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .tabela-stats th {
+            background: rgba(0,0,0,0.3);
+            color: #ddd;
+            font-weight: normal;
+            font-size: 0.75rem;
+            padding: 4px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        .tabela-stats td {
+            padding: 4px 8px;
+            text-align: center;
+            color: var(--color-gold);
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        .tabela-stats td:last-child, .tabela-stats th:last-child { border-right: none; }
+
+        /* Área Central: Bola e Histórico */
+        .area-sorteio {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+
+        .bola-numero {
+            width: clamp(80px, 16vw, 110px);
+            height: clamp(80px, 16vw, 110px);
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ffffff, #f5e7d7);
+            border: 4px solid var(--color-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(2.5rem, 6vw, 3.5rem);
+            font-weight: 900;
+            color: #222;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Histórico de Bolas */
+        .historico-container {
+            display: flex;
+            gap: 8px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 0.5rem;
+        }
+        .bola-pequena {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: #fff;
+            color: #333;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            border: 2px solid #ccc;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            animation: slideLeft 0.3s ease;
+        }
+        @keyframes slideLeft { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .headline-regra { text-align: center; line-height: 1.2; }
+        .headline-regra span { font-size: 0.8rem; opacity: 0.8; }
+        .headline-regra strong { display: block; color: var(--color-gold); font-size: 1rem; text-transform: uppercase;}
+
+        /* PAINEL JOGADORES */
+        .painel-jogadores {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+        .jogador-pill {
+            background: rgba(0,0,0,0.4);
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .jogador-pill.humano { border-color: var(--color-gold); background: rgba(245, 197, 66, 0.1); font-weight: bold; }
+
+        /* --- CARTELA 3D --- */
+        .cartela-wrapper {
+            width: 100%;
+            max-width: 450px; 
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.5rem;
+        }
+
+        .cartela3d {
+            background: linear-gradient(145deg, var(--color-card-blue), #1b2756);
+            border-radius: 18px;
+            border: 3px solid var(--color-gold);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+            padding: 0.8rem;
+            width: 100%;
+            position: relative;
+        }
+        /* Brilho interno */
+        .cartela3d::after {
+            content: ""; position: absolute; inset: 0;
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.2);
+            pointer-events: none;
+        }
+
+        .cartela-titulo-bingo {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0 0.5rem;
+        }
+
+        .letra-bingo {
+            font-size: clamp(1.4rem, 6vw, 2rem);
+            font-weight: 900;
+            color: var(--color-red);
+            text-shadow: 0 0 2px var(--color-gold), 0 0 6px var(--color-gold), 0 2px 4px rgba(0,0,0,0.8);
+            width: 20%; text-align: center;
+        }
+
+        .cartela-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            grid-template-rows: auto repeat(5, 1fr);
-            gap: 0.6vmin; 
-            
-            width: 100%;
-            height: auto;
-            max-width: 98%; 
-            max-height: 98%;
-            aspect-ratio: 5 / 6.2;
-            
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            padding: 1vmin;
-            border-radius: 1rem;
-            border: 2px solid var(--gold);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-            transition: all 0.2s;
+            gap: 5px;
+            aspect-ratio: 5 / 5.2; 
         }
 
-        /* Se tiver 2 cartelas */
-        .cards-container-2 {
-            display: flex;
-            gap: 2vmin;
-            width: 100%;
-            height: 100%;
-            justify-content: center;
-            align-items: center;
-        }
-        @media (orientation: portrait) {
-            .cards-container-2 { flex-direction: column; }
-            .cards-container-2 .bingo-card { max-height: 48%; width: 95%; }
-            .bingo-card { width: 96vw; max-width: 500px; }
-        }
-
-        /* CABEÇALHO B I N G O */
-        .header-cell {
-            background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
-            color: white;
-            font-family: 'Righteous', cursive;
-            font-size: clamp(1.5rem, 5vmin, 3rem);
+        .celula-bingo {
+            background: var(--color-cell-blue);
+            border-radius: 6px;
+            border-top: 1px solid rgba(255,255,255,0.4);
+            border-bottom: 3px solid rgba(0,0,0,0.4); 
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0.3rem;
-            text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
-            box-shadow: inset 0 2px 5px rgba(255,255,255,0.3);
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        /* CÉLULAS NÚMEROS - MAXIMIZADAS */
-        .num-cell {
-            background: #f8fafc;
-            color: #0f172a;
-            font-weight: 900;
-            font-size: clamp(1.8rem, 6.5vmin, 4.5rem); 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0.4rem;
+            font-size: clamp(1.1rem, 4vw, 1.6rem);
+            font-weight: 700;
+            color: #fff;
             cursor: pointer;
-            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
-            transition: transform 0.1s, background-color 0.2s;
+            box-shadow: 0 4px 5px rgba(0,0,0,0.3);
+            transition: background 0.2s;
         }
-        .num-cell:active { transform: scale(0.92); background-color: #e2e8f0; }
-
-        .num-cell.marked {
-            background: radial-gradient(circle at 30% 30%, #facc15 0%, #ca8a04 85%);
-            color: #422006;
-            border: 3px solid #fef08a;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transform: scale(0.98);
-        }
-
-        .num-cell.free { background: #cbd5e1; color: #64748b; }
-        .num-cell.free.marked { background: radial-gradient(circle, #facc15, #ca8a04); }
-
-        .num-cell.shake { animation: shake 0.4s; background-color: #fca5a5; }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
-
-        /* POPUP DE ANSIEDADE */
-        .anxiety-popup {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            background: radial-gradient(circle, #ef4444 0%, #7f1d1d 100%);
-            border: 4px solid #facc15;
-            padding: 20px;
-            border-radius: 20px;
-            z-index: 100;
-            text-align: center;
-            box-shadow: 0 0 50px rgba(239, 68, 68, 0.8);
-            pointer-events: none;
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .anxiety-popup.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        .anxiety-text {
-            font-family: 'Righteous', cursive;
-            font-size: 3rem;
-            color: white;
-            text-shadow: 3px 3px 0 #000;
-            line-height: 1;
-        }
-        .anxiety-sub { color: #fef08a; font-weight: bold; font-size: 1.2rem; margin-top: 5px; }
-
-        /* UI ELEMENTS */
-        .ball-hist {
-            width: 2.2rem; height: 2.2rem;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            color: #e2e8f0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; font-weight: bold;
-            flex-shrink: 0;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        .ball-hist.latest {
-            width: 2.6rem; height: 2.6rem;
-            background: #facc15; color: black;
-            border-color: white;
-            font-size: 1.3rem;
-            box-shadow: 0 0 15px #facc15;
-            animation: pulse-gold 1s infinite;
-        }
-        @keyframes pulse-gold { 50% { box-shadow: 0 0 25px #facc15; } }
-
-        /* BOTÕES */
-        .btn-action {
-            background: linear-gradient(to bottom, #16a34a, #15803d);
-            border-bottom: 4px solid #14532d;
-            color: white; font-weight: bold;
-            transition: transform 0.1s;
-        }
-        .btn-action:active { transform: translateY(4px); border-bottom: 0; }
+        .celula-bingo:active { transform: translateY(2px); border-bottom-width: 1px; }
         
-        .btn-yellow {
-            background: linear-gradient(to bottom, #ca8a04, #a16207);
-            border-bottom: 4px solid #713f12;
+        .celula-bingo.marcada {
+            background: var(--color-cell-marked);
+            color: #20150a;
+            border-color: #ffd700;
+            border-bottom: 2px solid #b88a0e;
+            transform: translateY(1px);
+        }
+        /* Removido estilo .destaque pois não damos mais dica */
+
+        /* CONTROLES E ALERTA */
+        .jogo-controles {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            width: 100%;
+            margin-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        .jogo-controles .btn { min-width: 140px; }
+
+        .painel-alerta {
+            text-align: center;
+            height: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .alerta-bingo {
+            background: #D7263D;
             color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
-        .btn-select { background: rgba(255,255,255,0.1); border: 2px solid transparent; color: #cbd5e1; }
-        .btn-select.active { background: rgba(0,0,0,0.3); border-color: #facc15; color: white; }
+        /* Overlay Vitória */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 999;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        .card-vitoria { border-color: #FFD700; box-shadow: 0 0 40px rgba(255, 215, 0, 0.4); text-align: center; }
+        .texto-premio { font-size: 2rem; color: #4eff88; font-weight: bold; margin: 1rem 0; display: block; }
 
-        .modal-bg { background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .alert-text { animation: flash 0.6s infinite alternate; color: #fef08a; }
-        @keyframes flash { from { opacity: 1; } to { opacity: 0.6; } }
+        /* Media Queries */
+        @media (max-width: 400px) {
+            .jogo-header-area { grid-template-columns: 1fr; text-align: center; gap: 0.5rem; }
+            .area-nome { align-items: center; }
+            .cartela-grid { gap: 3px; }
+            .celula-bingo { border-radius: 4px; }
+        }
     </style>
 </head>
-<body class="h-[100dvh] w-full flex flex-col overflow-hidden">
+<body>
 
-    <!-- POPUP DE ANSIEDADE -->
-    <div id="anxiety-alert" class="anxiety-popup">
-        <div class="anxiety-text" id="anxiety-main">FALTA 1!</div>
-        <div class="anxiety-sub">A sorte está chegando!</div>
-    </div>
+<div id="app">
+    <!-- O conteúdo será injetado aqui pelo JavaScript -->
+</div>
 
-    <!-- TELA 1: WELCOME -->
-    <section id="screen-welcome" class="flex-grow flex flex-col items-center justify-center p-4 relative z-10 text-center h-full">
-        <div class="mb-4 p-4 rounded-full border-4 border-yellow-500 bg-black/40 shadow-lg animate-bounce">
-            <i class="fas fa-gem text-5xl text-yellow-400"></i>
-        </div>
-        <h1 class="text-5xl text-yellow-400 mb-1 vegas-font drop-shadow-md">BINGO</h1>
-        <h2 class="text-lg text-blue-200 tracking-widest mb-6 uppercase font-light">Schola da Mente</h2>
-        
-        <div class="w-full max-w-xs">
-            <input type="text" id="inp-name" class="w-full p-3 mb-4 rounded-xl bg-white/10 text-white text-center text-xl border border-white/20 focus:border-yellow-400 outline-none placeholder-blue-300" placeholder="Digite seu nome">
-            <button onclick="goConfig()" class="w-full btn-action py-3 rounded-xl text-lg shadow-lg uppercase tracking-wide">ENTRAR</button>
-        </div>
-    </section>
+<script>
+/**
+ * SCHOLA DA MENTE - BINGO DA MENTE
+ * Versão Acessível "Sem Dicas"
+ */
 
-    <!-- TELA 2: CONFIG -->
-    <section id="screen-config" class="hidden flex-col h-full items-center justify-center p-4 overflow-y-auto">
-        <div class="w-full max-w-md bg-black/40 border border-white/10 rounded-2xl shadow-2xl p-5 backdrop-blur-md">
-            <h2 class="text-2xl text-yellow-400 text-center vegas-font mb-4">CONFIGURAR MESA</h2>
-            <div class="space-y-4">
-                <!-- Cartelas -->
-                <div>
-                    <label class="text-blue-300 text-[10px] font-bold uppercase block mb-1">Cartelas</label>
-                    <div class="flex gap-2">
-                        <button onclick="setCards(1)" class="flex-1 py-3 btn-select rounded-lg font-bold" id="btn-c1">1 CARTELA</button>
-                        <button onclick="setCards(2)" class="flex-1 py-3 btn-select rounded-lg font-bold" id="btn-c2">2 CARTELAS</button>
-                    </div>
-                </div>
-                <!-- Adversários -->
-                <div>
-                    <label class="text-blue-300 text-[10px] font-bold uppercase block mb-1">Adversários</label>
-                    <div class="grid grid-cols-4 gap-2">
-                         <button onclick="setBots(1)" class="py-2 btn-select rounded-lg font-bold" id="btn-b1">1</button>
-                         <button onclick="setBots(3)" class="py-2 btn-select rounded-lg font-bold" id="btn-b3">3</button>
-                         <button onclick="setBots(7)" class="py-2 btn-select rounded-lg font-bold" id="btn-b7">7</button>
-                         <button onclick="setBots(10)" class="py-2 btn-select rounded-lg font-bold" id="btn-b10">10</button>
-                    </div>
-                </div>
-                <!-- Regra -->
-                <div>
-                     <label class="text-blue-300 text-[10px] font-bold uppercase block mb-1">Meta</label>
-                     <select id="sel-rule" class="w-full p-3 bg-black/50 text-white rounded-lg border border-white/20 text-sm outline-none font-bold" onchange="updatePot()">
-                         <option value="line">LINHA (Rápido)</option>
-                         <option value="full">CARTELA CHEIA</option>
-                     </select>
-                </div>
-                <!-- Aposta -->
-                <div class="bg-blue-900/30 p-3 rounded-xl border border-white/10">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-blue-200 text-xs">Saldo:</span>
-                        <span class="text-xl font-bold text-yellow-400">$ <span id="ui-bal">500</span></span>
-                    </div>
-                    <div class="flex gap-2 mb-2">
-                        <button onclick="setBet(10)" class="flex-1 py-2 bg-white/10 rounded text-xs font-bold hover:bg-white/20">10</button>
-                        <button onclick="setBet(50)" class="flex-1 py-2 bg-white/10 rounded text-xs font-bold hover:bg-white/20">50</button>
-                        <button onclick="setBet(100)" class="flex-1 py-2 bg-white/10 rounded text-xs font-bold hover:bg-white/20">100</button>
-                    </div>
-                    <div class="text-center bg-green-900/40 p-1 rounded border border-green-500/30">
-                        <span class="text-green-300 text-[10px] uppercase">Prêmio Possível:</span>
-                        <span class="font-bold text-2xl text-green-400 block">$ <span id="ui-pot">0</span></span>
-                    </div>
-                </div>
-            </div>
-            <button onclick="startGame()" class="w-full mt-4 btn-action py-4 rounded-lg text-xl shadow-xl tracking-wide">INICIAR JOGO</button>
-        </div>
-    </section>
+// --- 0. ESTADO GLOBAL ---
+const state = {
+    user: {
+        nome: '',
+        saldo: 1000
+    },
+    config: {
+        numJogadores: 7,
+        regra: 'cartela', // 'linha', 'coluna', 'cartela'
+        aposta: 25
+    },
+    jogo: {
+        emAndamento: false,
+        pausado: true,
+        numerosSorteados: [],
+        numerosDisponiveis: [],
+        cartelaHumano: [],
+        cartelasBots: [],
+        intervaloSorteio: null,
+        vencedor: null
+    },
+    audio: {
+        voices: []
+    }
+};
 
-    <!-- TELA 3: JOGO -->
-    <section id="screen-game" class="hidden h-full flex-col">
-        
-        <!-- HEADER OTIMIZADO -->
-        <div class="flex-none bg-black/30 backdrop-blur-md border-b border-white/10 pt-2 pb-1 px-3 z-20 shadow-md">
-            
-            <!-- LINHA 1: INFO PRINCIPAL -->
-            <div class="flex items-center justify-between mb-1">
-                <!-- Jogador & Saldo -->
-                <div class="flex flex-col">
-                    <div class="text-yellow-400 font-bold text-sm truncate max-w-[120px]" id="game-pname">😎 Jogador</div>
-                    <div class="text-[10px] text-blue-200 font-bold">Saldo: <span class="text-white text-base">$ <span id="game-bal">500</span></span></div>
-                </div>
+const BOTS_NAMES = [
+    "Dona Ana 🦋", "Sr. João 🎩", "Lúcia 🧶", "Carlos 👓", 
+    "Vó Maria 🍪", "Seu Zé 🎸", "Bete 🌺", "Pedro 🛠️", 
+    "Clara ☀️", "Roberto 🚲", "Dr. Paulo 🩺", "Tia Sol ☀️"
+];
 
-                <!-- HEADLINE CENTRAL -->
-                <div class="flex-1 text-center px-1">
-                    <div class="bg-blue-600/30 border border-blue-400/30 rounded px-3 py-1 inline-block">
-                        <div class="text-[10px] md:text-xs text-yellow-100 font-bold uppercase tracking-wide leading-tight" id="game-rule-text">
-                            GANHA: LINHA
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Prêmio -->
-                <div class="flex flex-col items-end">
-                    <div class="text-[9px] text-green-300 uppercase">Prêmio</div>
-                    <div class="text-xl font-bold text-green-400 leading-none drop-shadow">$ <span id="game-pot">0</span></div>
-                </div>
-            </div>
-
-            <!-- LINHA 2: HISTÓRICO & RIVAIS -->
-            <div class="flex flex-col gap-1">
-                <!-- Histórico -->
-                <div class="flex items-center gap-2 h-12 bg-black/40 rounded-lg px-2 relative overflow-hidden border border-white/5">
-                    <div class="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-black/80 to-transparent z-10"></div>
-                    <div id="ball-history" class="flex items-center gap-2 overflow-x-auto no-scrollbar w-full flex-row-reverse px-1">
-                        <span class="text-[10px] text-gray-400 italic">Sorteando...</span>
-                    </div>
-                </div>
-                
-                <!-- Rivais -->
-                <div id="rivals-bar" class="flex gap-2 overflow-x-auto no-scrollbar py-1 min-h-[22px]"></div>
-            </div>
-        </div>
-        
-        <!-- MENSAGEM / ALERTA -->
-        <div class="flex-none bg-black/50 text-center py-0.5 border-b border-white/5">
-            <span id="game-msg" class="text-blue-100 text-[10px] uppercase tracking-widest font-bold">Boa Sorte!</span>
-        </div>
-
-        <!-- ÁREA CENTRAL (CARTELA) -->
-        <div id="game-area" class="flex-1 min-h-0 relative w-full flex flex-col items-center justify-center bg-transparent p-1 overflow-y-auto">
-            <!-- Cartela injetada aqui -->
-        </div>
-
-        <!-- RODAPÉ CONTROLES -->
-        <div class="flex-none bg-black/40 backdrop-blur-md border-t border-white/10 p-2 z-20 safe-area-bottom">
-            <div class="flex items-center justify-between gap-3 max-w-md mx-auto">
-                <button onclick="quit()" class="px-4 py-3 rounded-lg bg-white/10 text-gray-300 border border-white/10 text-xs font-bold hover:bg-white/20">
-                    MENU
-                </button>
-                
-                <button onclick="togglePlay()" id="btn-play" class="flex-grow h-12 rounded-lg btn-action text-base flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide">
-                    <i class="fas fa-play"></i> <span>Começar</span>
-                </button>
-
-                 <button onclick="toggleMute()" class="w-12 h-12 rounded-lg bg-white/10 text-gray-300 border border-white/10 flex items-center justify-center hover:bg-white/20">
-                    <i id="icon-sound" class="fas fa-volume-up text-sm"></i>
-                </button>
-            </div>
-        </div>
-
-    </section>
-
-    <!-- MODAL VITORIA/DERROTA -->
-    <div id="modal-end" class="fixed inset-0 z-50 hidden modal-bg flex items-center justify-center p-6">
-        <div class="bg-blue-900 border-4 border-yellow-500 rounded-2xl p-6 text-center max-w-xs w-full shadow-2xl relative overflow-hidden">
-            <div class="absolute inset-0 bg-white/5 animate-pulse pointer-events-none"></div>
-            <h2 id="end-title" class="text-4xl text-yellow-400 vegas-font mb-2 drop-shadow-md">BINGO!</h2>
-            <p id="end-msg" class="text-white text-base mb-4 font-bold">Vitória!</p>
-            <div class="bg-black/40 p-3 rounded-xl mb-4 border border-white/10" id="prize-box">
-                <span class="text-blue-300 text-[10px] uppercase">Você Ganhou</span>
-                <div class="text-3xl font-bold text-green-400 mt-1">$ <span id="win-amount">0</span></div>
-            </div>
-            <button onclick="closeEnd()" class="w-full btn-action py-3 rounded-lg text-base uppercase font-bold shadow-lg">Continuar</button>
-        </div>
-    </div>
-
-    <!-- JS OTIMIZADO -->
-    <script>
-        var $ = function(id) { return document.getElementById(id); };
-        
-        // --- AUDIO ENGINE OTIMIZADA ---
-        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        var shakerBuffer = null;
-
-        function initAudio() {
-            if(!shakerBuffer) {
-                var rate = audioCtx.sampleRate;
-                var len = rate * 1.0; // Reduzido para 1s para ser mais leve
-                shakerBuffer = audioCtx.createBuffer(1, len, rate);
-                var data = shakerBuffer.getChannelData(0);
-                for(var i=0; i < len; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-            }
+// --- 1. GERENCIAMENTO DE DADOS (LOCALSTORAGE) ---
+function carregarDados() {
+    try {
+        const dados = localStorage.getItem('bingo_schola_db');
+        if (dados) {
+            const parsed = JSON.parse(dados);
+            state.user.nome = parsed.nome || '';
+            state.user.saldo = typeof parsed.saldo === 'number' ? parsed.saldo : 1000;
         }
+    } catch (e) { console.error("Erro ao carregar dados", e); }
+}
 
-        function resumeAudio() { if (audioCtx.state === 'suspended') audioCtx.resume(); }
+function salvarDados() {
+    try {
+        localStorage.setItem('bingo_schola_db', JSON.stringify(state.user));
+    } catch (e) { console.error("Erro ao salvar dados", e); }
+}
 
-        function playSound(type) {
-            if(S.mute) return;
-            resumeAudio();
-            var now = audioCtx.currentTime;
-            
-            // Garbage Collection Manual: Desconectar após uso
-            var gain = audioCtx.createGain();
-            gain.connect(audioCtx.destination);
-
-            if(type === 'shaker') {
-                if(!shakerBuffer) initAudio();
-                var src = audioCtx.createBufferSource();
-                src.buffer = shakerBuffer;
-                var filter = audioCtx.createBiquadFilter();
-                filter.type = 'highpass'; filter.frequency.value = 800;
-                
-                src.connect(filter); filter.connect(gain);
-                
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.2, now + 0.1);
-                gain.gain.linearRampToValueAtTime(0, now + 0.5);
-                
-                src.start(now); src.stop(now + 0.6);
-                
-                // Limpeza
-                setTimeout(function(){ src.disconnect(); gain.disconnect(); }, 1000);
-            }
-            else if(type === 'draw') {
-                var osc = audioCtx.createOscillator();
-                osc.connect(gain);
-                osc.type = 'triangle'; 
-                osc.frequency.setValueAtTime(500, now);
-                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now); osc.stop(now + 0.5);
-                setTimeout(function(){ osc.disconnect(); gain.disconnect(); }, 1000);
-            }
-            else if(type === 'click') {
-                var osc = audioCtx.createOscillator();
-                osc.connect(gain);
-                osc.frequency.setValueAtTime(800, now);
-                gain.gain.setValueAtTime(0.1, now);
-                osc.start(now); osc.stop(now + 0.1);
-                setTimeout(function(){ osc.disconnect(); gain.disconnect(); }, 500);
-            }
-            else if(type === 'alert') {
-                var osc = audioCtx.createOscillator();
-                osc.connect(gain);
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(400, now);
-                gain.gain.setValueAtTime(0.1, now);
-                osc.start(now); osc.stop(now + 0.3);
-                setTimeout(function(){ osc.disconnect(); gain.disconnect(); }, 1000);
-            }
-            else if(type === 'win') {
-                [523, 659, 783, 1046].forEach(function(f, i) {
-                    var o = audioCtx.createOscillator(); 
-                    var g = audioCtx.createGain();
-                    o.connect(g); g.connect(audioCtx.destination);
-                    o.frequency.value = f;
-                    g.gain.setValueAtTime(0.1, now + i*0.1);
-                    g.gain.linearRampToValueAtTime(0, now + i*0.1 + 0.5);
-                    o.start(now + i*0.1); o.stop(now + i*0.1 + 0.5);
-                    setTimeout(function(){ o.disconnect(); g.disconnect(); }, 2000);
-                });
-            }
-        }
-
-        function speak(text) {
-            if(S.mute || !('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel(); // Sempre cancela anterior para não encavalar
-            var u = new SpeechSynthesisUtterance(text);
-            u.lang = 'pt-BR'; u.rate = 1.1; 
-            window.speechSynthesis.speak(u);
-        }
-
-        // --- DADOS ---
-        var botNames = ["🤖 Maria", "🤠 José", "👩 Ana", "👴 Carlos", "🧑‍🦱 Pedro", "👵 Lúcia", "👨‍✈️ Paulo", "👩‍🏫 Fernanda", "👮 Roberto", "👸 Iza"];
-        var phrases = [
-            "🧠 Exercita a memória!", "👀 Foco total!", "⚡ Raciocínio rápido!",
-            "✨ Mente ativa!", "😁 Diversão garantida!", "🧘 Respire fundo!",
-            "🎯 Olho na cartela!"
-        ];
-        
-        var S = {
-            scr: 'welcome', name: '', bal: 500, mute: false,
-            cfg: { cards: 1, rule: 'line', bet: 10, spd: 4500, botCount: 3 },
-            game: { active: false, pause: true, drawn: [], timer: null, cards: [], marks: [], bots: [] }
+// --- 2. SISTEMA DE VOZ (NARRADOR) ---
+function carregarVozes() {
+    if ('speechSynthesis' in window) {
+        state.audio.voices = window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => {
+            state.audio.voices = window.speechSynthesis.getVoices();
         };
+    }
+}
 
-        // --- CORE ---
-        window.onload = function() {
-            initAudio(); 
-            var sn = localStorage.getItem('bingo_nm');
-            var sb = localStorage.getItem('bingo_bl');
-            if(sb) S.bal = parseInt(sb);
-            if(sn) { S.name = sn; $('inp-name').value = sn; }
-            updUi();
+function falarTexto(texto) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+        window.speechSynthesis.cancel(); 
+        const utterance = new SpeechSynthesisUtterance(texto);
+        
+        const vozesPT = state.audio.voices.filter(v => v.lang.startsWith('pt'));
+        let vozEscolhida = vozesPT.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('homem') || v.name.includes('Daniel'));
+        
+        if (!vozEscolhida && vozesPT.length > 0) vozEscolhida = vozesPT[0]; 
+        if (!vozEscolhida && state.audio.voices.length > 0) vozEscolhida = state.audio.voices[0]; 
+        
+        if (vozEscolhida) utterance.voice = vozEscolhida;
+        utterance.rate = 1.0;
+        utterance.pitch = 0.9; 
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn("Erro no narrador:", e);
+    }
+}
+
+// --- 3. RENDERIZAÇÃO DE TELAS ---
+function renderizarTela(nomeTela) {
+    const app = document.getElementById('app');
+    if (!app) return;
+
+    if (nomeTela !== 'jogo' && state.jogo.intervaloSorteio) {
+        clearInterval(state.jogo.intervaloSorteio);
+        state.jogo.intervaloSorteio = null;
+    }
+
+    app.innerHTML = ''; 
+
+    if (nomeTela === 'inicial') montarTelaInicial(app);
+    else if (nomeTela === 'config') montarTelaConfig(app);
+    else if (nomeTela === 'jogo') montarTelaJogo(app);
+}
+
+// --- TELA INICIAL ---
+function montarTelaInicial(container) {
+    container.innerHTML = `
+        <div class="card">
+            <h1 class="titulo-app">Schola da Mente</h1>
+            <h2 class="subtitulo-app">Bingo da Mente</h2>
+            
+            <label class="label-nome" for="nomeJogador">Digite seu nome</label>
+            <input id="nomeJogador" class="input-nome" type="text" placeholder="Ex: Maria" maxlength="15" value="${state.user.nome}">
+            
+            <div class="saldo-container">
+                <span>Saldo de Moedas da Mente:</span>
+                <strong id="saldoValorInicial">${state.user.saldo}</strong>
+            </div>
+            
+            <button id="btnAdicionarSaldoInicial" class="btn btn-secundario">Adicionar Saldo (+100 Moedas)</button>
+            <button id="btnComecar" class="btn btn-principal" style="font-size: 1.1rem; padding: 1rem;">COMEÇAR</button>
+        </div>
+    `;
+
+    const btnAdd = document.getElementById('btnAdicionarSaldoInicial');
+    if (btnAdd) {
+        btnAdd.onclick = () => {
+            state.user.saldo += 100;
+            salvarDados();
+            const elSaldo = document.getElementById('saldoValorInicial');
+            if (elSaldo) elSaldo.innerText = state.user.saldo;
         };
+    }
 
-        function updUi() {
-            $('ui-bal').innerText = S.bal;
-            localStorage.setItem('bingo_bl', S.bal);
-        }
-
-        function switchScr(id) {
-            document.querySelectorAll('section').forEach(function(el) {
-                el.classList.add('hidden'); el.classList.remove('flex');
-            });
-            $(id).classList.remove('hidden'); $(id).classList.add('flex');
-        }
-
-        // --- CONFIG ---
-        function goConfig() {
-            resumeAudio();
-            var n = $('inp-name').value.trim();
-            if(!n) return alert('Digite seu nome.');
-            S.name = n; localStorage.setItem('bingo_nm', n);
-            switchScr('screen-config');
-            playSound('click');
-            setCards(1); setBet(10); setBots(3);
-        }
-
-        function setCards(n) {
-            S.cfg.cards = n;
-            $('btn-c1').classList.toggle('active', n===1);
-            $('btn-c2').classList.toggle('active', n===2);
-            playSound('click');
-        }
-        function setBots(n) {
-            S.cfg.botCount = n;
-            [1,3,7,10].forEach(function(k) {
-                var el = $('btn-b'+k);
-                if(el) el.classList.toggle('active', k===n);
-            });
-            playSound('click');
-        }
-        function setBet(n) {
-            if(n > S.bal) return alert('Saldo insuficiente!');
-            S.cfg.bet = n; updatePot(); playSound('click');
-        }
-        function updatePot() {
-            var m = $('sel-rule').value === 'full' ? 5 : 2;
-            $('ui-pot').innerText = S.cfg.bet * m;
-        }
-        function toggleMute() {
-            S.mute = !S.mute;
-            $('icon-sound').className = S.mute ? 'fas fa-volume-mute text-red-500 text-xs' : 'fas fa-volume-up text-xs';
-            if(S.mute) window.speechSynthesis.cancel();
-        }
-
-        // --- GAME ---
-        function startGame() {
-            resumeAudio();
-            if(S.bal < S.cfg.bet) return alert('Sem saldo.');
-            S.bal -= S.cfg.bet; updUi();
-            
-            S.game = { active: true, pause: true, drawn: [], timer: null, cards: [], marks: [], bots: [] };
-            
-            $('ball-history').innerHTML = ''; 
-            $('game-pname').innerText = "😎 " + S.name;
-            $('game-bal').innerText = S.bal;
-            var m = $('sel-rule').value === 'full' ? 5 : 2;
-            $('game-pot').innerText = (S.cfg.bet * m);
-            
-            var ruleLabel = $('sel-rule').value === 'full' ? "COMPLETAR CARTELA" : "FAZER UMA LINHA";
-            $('game-rule-text').innerText = "GANHA: " + ruleLabel;
-
-            var btn = $('btn-play');
-            btn.innerHTML = '<i class="fas fa-play"></i> <span>COMEÇAR</span>';
-            btn.className = "flex-grow h-10 rounded-lg btn-action text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide";
-            
-            $('game-msg').innerText = "Divirta-se!";
-            $('game-msg').className = "text-blue-100 text-[10px] uppercase tracking-widest font-bold";
-
-            var needed = $('sel-rule').value === 'full' ? 24 : 5;
-            var shuffled = botNames.sort(function() { return 0.5 - Math.random() });
-            for(var i=0; i<S.cfg.botCount; i++) {
-                var bName = shuffled[i] || ("Bot " + (i+1));
-                S.game.bots.push({ name: bName, needed: needed });
-            }
-            updateRivalsUI();
-
-            genCards();
-            renderCards();
-            switchScr('screen-game');
-            playSound('click');
-        }
-
-        function updateRivalsUI() {
-            var html = "";
-            var alertMsg = "";
-            
-            // Bot Logic
-            S.game.bots.forEach(function(b) {
-                var styleClass = "";
-                if (b.needed === 3) styleClass = "warn-3";
-                if (b.needed === 2) styleClass = "warn-2";
-                if (b.needed === 1) styleClass = "warn-1";
-
-                html += '<div class="rival-pill text-white '+styleClass+'"><span class="font-bold">'+b.name+'</span><span class="text-blue-200 text-[9px] ml-1">falta '+b.needed+'</span></div>';
-                
-                if(b.needed === 1) alertMsg = "⚠️ " + b.name + " POR UMA!";
-            });
-            $('rivals-bar').innerHTML = html;
-            
-            if(alertMsg) {
-                $('game-msg').innerText = alertMsg;
-                $('game-msg').className = "text-yellow-300 text-xs uppercase tracking-widest font-bold alert-text";
-            }
-        }
-
-        function genCards() {
-            var ranges = [[1,15],[16,30],[31,45],[46,60],[61,75]];
-            for(var c=0; c<S.cfg.cards; c++){
-                var flat = new Array(25).fill(0);
-                for(var col=0; col<5; col++){
-                    var nums = [];
-                    while(nums.length<5){
-                        var r = Math.floor(Math.random()*(ranges[col][1]-ranges[col][0]+1))+ranges[col][0];
-                        if(nums.indexOf(r) === -1) nums.push(r);
-                    }
-                    for(var row=0; row<5; row++) flat[row*5+col] = nums[row];
-                }
-                flat[12] = 0; 
-                S.game.cards.push(flat);
-                var m = new Array(25).fill(false); m[12] = true;
-                S.game.marks.push(m);
-            }
-        }
-
-        function renderCards() {
-            var area = $('game-area'); area.innerHTML = '';
-            var wrap = document.createElement('div');
-            wrap.className = S.cfg.cards === 1 ? "cards-wrapper" : "cards-container-2";
-
-            S.game.cards.forEach(function(card, cIdx) {
-                var div = document.createElement('div');
-                div.className = "bingo-card";
-                
-                ['B','I','N','G','O'].forEach(function(l) {
-                    var h = document.createElement('div');
-                    h.className = "header-cell"; h.innerText = l;
-                    div.appendChild(h);
-                });
-
-                card.forEach(function(n, i) {
-                    var cell = document.createElement('div');
-                    cell.className = "num-cell"; cell.id = 'c'+cIdx+'-'+i;
-                    
-                    if(n === 0) {
-                        cell.classList.add('marked', 'free');
-                        cell.innerHTML = '<i class="fas fa-star text-yellow-600"></i>';
-                    } else {
-                        cell.innerText = n;
-                        cell.onclick = function() { hit(cIdx, i, n); };
-                    }
-                    div.appendChild(cell);
-                });
-                wrap.appendChild(div);
-            });
-            area.appendChild(wrap);
-        }
-
-        // --- SISTEMA DE SORTEIO OTIMIZADO (RECURSIVO) ---
-        // Evita travamentos por stack overflow de setInterval
-        function togglePlay() {
-            if(S.game.pause) {
-                S.game.pause = false;
-                var btn = $('btn-play');
-                btn.innerHTML = '<i class="fas fa-pause"></i> <span>PAUSAR</span>';
-                btn.className = "flex-grow h-10 rounded-lg btn-yellow text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide";
-                
-                if(S.game.drawn.length === 0) loopDraw(); // Inicia
-                else loopDraw(); // Retoma
-            } else { 
-                stop(); 
-                var btn = $('btn-play');
-                btn.innerHTML = '<i class="fas fa-play"></i> <span>CONTINUAR</span>';
-                btn.className = "flex-grow h-10 rounded-lg btn-action text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide";
-            }
-        }
-
-        function stop() {
-            S.game.pause = true; 
-            clearTimeout(S.game.timer); // Para o timeout recursivo
-        }
-
-        function loopDraw() {
-            if(S.game.pause || !S.game.active) return;
-            draw();
-            // Agenda o próximo sorteio APENAS após o atual ser processado
-            // spd + 1000ms de margem de animação/som
-            S.game.timer = setTimeout(loopDraw, S.cfg.spd); 
-        }
-
-        function draw() {
-            if(S.game.drawn.length >= 75) { stop(); alert("Fim das pedras!"); return; }
-
-            // Frases aleatórias
-            if(Math.random() < 0.2 && !$('game-msg').innerText.includes("⚠️")) {
-                $('game-msg').innerText = phrases[Math.floor(Math.random()*phrases.length)];
-                $('game-msg').className = "text-blue-100 text-[10px] uppercase tracking-widest font-bold";
-            }
-
-            // Toca som Shaker antes
-            playSound('shaker');
-
-            setTimeout(function() {
-                if(!S.game.active || S.game.pause) return; // Checa se pausou durante o som
-                
-                var n; do { n = Math.floor(Math.random()*75)+1; } while(S.game.drawn.indexOf(n) !== -1);
-                S.game.drawn.push(n);
-
-                // Update Ball
-                var hist = $('ball-history');
-                if(S.game.drawn.length === 1) hist.innerHTML = '';
-                var prev = hist.querySelector('.latest');
-                if(prev) prev.classList.remove('latest');
-
-                var ballEl = document.createElement('div');
-                ballEl.className = "ball-hist latest";
-                ballEl.innerText = n;
-                // Animação CSS simples
-                ballEl.style.animation = "pulse-gold 1s infinite"; 
-
-                // Limitar histórico no DOM para não travar (apenas últimos 10 visíveis)
-                if(hist.children.length > 15) hist.removeChild(hist.lastChild);
-                hist.prepend(ballEl);
-                
-                playSound('draw');
-                speak(n.toString());
-
-                // Bot Logic
-                S.game.bots.forEach(function(b) {
-                    if(b.needed > 0 && Math.random() < 0.22) { 
-                        b.needed--;
-                    }
-                });
-                updateRivalsUI();
-                
-                // Bot Win Check
-                var winnerBot = S.game.bots.find(function(b) { return b.needed === 0; });
-                if(winnerBot) {
-                    doEnd(false, winnerBot.name);
-                }
-
-            }, 500); // Sincroniza com shaker
-        }
-
-        function hit(cIdx, i, n) {
-            if(S.game.marks[cIdx][i]) return;
-            var el = $('c'+cIdx+'-'+i);
-            
-            if(S.game.drawn.indexOf(n) !== -1) {
-                S.game.marks[cIdx][i] = true;
-                el.classList.add('marked');
-                playSound('click');
-                checkWin(cIdx);
-                checkNearWin(cIdx);
+    const btnStart = document.getElementById('btnComecar');
+    if (btnStart) {
+        btnStart.onclick = () => {
+            const input = document.getElementById('nomeJogador');
+            if (input && input.value.trim()) {
+                state.user.nome = input.value.trim();
+                salvarDados();
+                renderizarTela('config');
             } else {
-                el.classList.add('shake');
-                setTimeout(function() { el.classList.remove('shake'); }, 400);
+                alert("Por favor, digite seu nome para continuar.");
             }
-        }
+        };
+    }
+}
 
-        function checkNearWin(cIdx) {
-            var m = S.game.marks[cIdx];
-            var r = $('sel-rule').value;
-            var neededMin = 99;
+// --- TELA CONFIG ---
+function montarTelaConfig(container) {
+    container.innerHTML = `
+        <div class="card card-config">
+            <h2 class="titulo-app">Configuração</h2>
+            
+            <div class="saldo-container" style="display:flex; justify-content:space-between; align-items:center; padding: 0.5rem 1rem;">
+                <span style="font-size:0.9rem">Saldo: <strong id="saldoValorConfig">${state.user.saldo}</strong></span>
+                <button id="btnAdicionarSaldoConfig" class="btn btn-secundario" style="font-size:0.8rem; padding:0.4rem 0.8rem;">+100</button>
+            </div>
 
-            if(r === 'line') {
-                var lines = [];
-                for(var k=0; k<5; k++) {
-                    lines.push([k*5, k*5+1, k*5+2, k*5+3, k*5+4]); // rows
-                    lines.push([k, k+5, k+10, k+15, k+20]); // cols
-                }
-                lines.forEach(function(line) {
-                    var missing = line.filter(function(idx) { return !m[idx]; }).length;
-                    if(missing < neededMin) neededMin = missing;
-                });
+            <div class="grupo-opcao">
+                <p class="grupo-titulo">NÚMERO DE RIVAIS</p>
+                <div class="btn-group">
+                    <button class="btn btn-toggle ${state.config.numJogadores === 1 ? 'ativo' : ''}" onclick="selectConfig('jogadores', 1)">1</button>
+                    <button class="btn btn-toggle ${state.config.numJogadores === 3 ? 'ativo' : ''}" onclick="selectConfig('jogadores', 3)">3</button>
+                    <button class="btn btn-toggle ${state.config.numJogadores === 7 ? 'ativo' : ''}" onclick="selectConfig('jogadores', 7)">7</button>
+                    <button class="btn btn-toggle ${state.config.numJogadores === 10 ? 'ativo' : ''}" onclick="selectConfig('jogadores', 10)">10</button>
+                </div>
+            </div>
+
+            <div class="grupo-opcao">
+                <p class="grupo-titulo">REGRA DE VITÓRIA</p>
+                <div class="btn-group">
+                    <button class="btn btn-toggle ${state.config.regra === 'linha' ? 'ativo' : ''}" onclick="selectConfig('regra', 'linha')">LINHA</button>
+                    <button class="btn btn-toggle ${state.config.regra === 'coluna' ? 'ativo' : ''}" onclick="selectConfig('regra', 'coluna')">COLUNA</button>
+                    <button class="btn btn-toggle ${state.config.regra === 'cartela' ? 'ativo' : ''}" onclick="selectConfig('regra', 'cartela')">CARTELA CHEIA</button>
+                </div>
+            </div>
+
+            <div class="grupo-opcao">
+                <p class="grupo-titulo">APOSTA</p>
+                <div class="btn-group">
+                    <button class="btn btn-toggle ${state.config.aposta === 10 ? 'ativo' : ''}" onclick="selectConfig('aposta', 10)">10</button>
+                    <button class="btn btn-toggle ${state.config.aposta === 25 ? 'ativo' : ''}" onclick="selectConfig('aposta', 25)">25</button>
+                    <button class="btn btn-toggle ${state.config.aposta === 50 ? 'ativo' : ''}" onclick="selectConfig('aposta', 50)">50</button>
+                    <button class="btn btn-toggle ${state.config.aposta === 100 ? 'ativo' : ''}" onclick="selectConfig('aposta', 100)">100</button>
+                </div>
+                <p style="text-align:center; font-size:0.9rem; margin:0.5rem 0 0 0;">Selecionado: <strong id="apostaSelecionada" style="color:var(--color-gold)">${state.config.aposta}</strong> Moedas</p>
+            </div>
+
+            <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                <button id="btnComoJogarConfig" class="btn btn-secundario" style="flex:1">Como Jogar</button>
+                <button id="btnIniciarBingo" class="btn btn-principal" style="flex:1">JOGAR</button>
+            </div>
+        </div>
+    `;
+
+    window.selectConfig = (tipo, valor) => {
+        if (tipo === 'jogadores') state.config.numJogadores = valor;
+        if (tipo === 'regra') state.config.regra = valor;
+        if (tipo === 'aposta') state.config.aposta = valor;
+        renderizarTela('config');
+    };
+
+    const btnAdd = document.getElementById('btnAdicionarSaldoConfig');
+    if (btnAdd) {
+        btnAdd.onclick = () => {
+            state.user.saldo += 100;
+            salvarDados();
+            renderizarTela('config');
+        };
+    }
+
+    const btnInfo = document.getElementById('btnComoJogarConfig');
+    if (btnInfo) {
+        btnInfo.onclick = () => alert(`REGRA: ${state.config.regra.toUpperCase()}\n\n1. O narrador falará o número.\n2. VOCÊ deve encontrar e marcar na sua cartela.\n3. Não haverá dicas visuais. Atenção!\n4. Vença ao completar a regra selecionada.`);
+    }
+
+    const btnPlay = document.getElementById('btnIniciarBingo');
+    if (btnPlay) {
+        btnPlay.onclick = () => {
+            if (state.user.saldo < state.config.aposta) {
+                alert("Saldo insuficiente! Adicione mais moedas.");
             } else {
-                neededMin = m.filter(function(x) { return !x; }).length;
+                iniciarPartida();
             }
+        };
+    }
+}
 
-            if(neededMin === 1 || neededMin === 2) {
-                showAnxietyPopup(neededMin);
-            }
-        }
+// --- TELA JOGO ---
+function montarTelaJogo(container) {
+    let textoRegra = state.config.regra === 'cartela' ? 'CARTELA INTEIRA' : 
+                     state.config.regra === 'linha' ? 'UMA LINHA' : 'UMA COLUNA';
 
-        function showAnxietyPopup(n) {
-            var pop = $('anxiety-alert');
-            var txt = $('anxiety-main');
-            
-            txt.innerText = "FALTA " + (n===1 ? "UMA!" : "DUAS!");
-            pop.classList.add('show');
-            playSound('alert');
-            
-            setTimeout(function() {
-                pop.classList.remove('show');
-            }, 2000);
-        }
-
-        function checkWin(cIdx) {
-            var m = S.game.marks[cIdx];
-            var r = $('sel-rule').value;
-            var w = false;
-            var _chk = function(arr) { return arr.every(function(x) { return m[x]; }); };
-
-            if(r === 'line') {
-                for(var k=0; k<5; k++) {
-                    if(_chk([k*5, k*5+1, k*5+2, k*5+3, k*5+4])) w=true; 
-                    if(_chk([k, k+5, k+10, k+15, k+20])) w=true;
-                }
-            } else {
-                if(m.every(function(x) { return x; })) w=true;
-            }
-
-            if(w) doEnd(true, S.name);
-        }
-
-        function doEnd(won, winnerName) {
-            stop(); S.game.active = false;
-            var border = $('modal-border');
-            var title = $('end-title');
-            var msg = $('end-msg');
-            var pbox = $('prize-box');
-            
-            if(won) {
-                var mult = $('sel-rule').value === 'full' ? 5 : 2;
-                var prize = S.cfg.bet * mult;
-                S.bal += prize; updUi();
+    container.innerHTML = `
+        <div class="jogo-container">
+            <!-- TOPO: Nome e Tabela de Stats -->
+            <div class="jogo-header-area">
+                <div class="area-nome">
+                    <p class="nome-label">JOGADOR(A)</p>
+                    <p class="nome-header">${state.user.nome}</p>
+                </div>
                 
-                title.innerText = "BINGO!";
-                title.className = "text-5xl text-yellow-400 vegas-font mb-2";
-                msg.innerText = "Parabéns, " + S.name + "!";
-                pbox.style.display = "block";
-                $('win-amount').innerText = prize;
-                playSound('win');
-            } else {
-                title.innerText = "DERROTA";
-                title.className = "text-4xl text-red-500 vegas-font mb-2";
-                msg.innerText = winnerName + " bateu o Bingo!";
-                pbox.style.display = "none";
+                <table class="tabela-stats">
+                    <thead>
+                        <tr>
+                            <th>SALDO</th>
+                            <th>APOSTA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="saldoHeader">${state.user.saldo}</td>
+                            <td>${state.config.aposta}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="grid-column: 1 / -1; text-align: center;">
+                     <button id="btnAdicionarSaldoJogo" class="btn btn-secundario" style="font-size:0.7rem; padding:0.3rem 0.6rem; width:100%">+100 MOEDAS</button>
+                </div>
+            </div>
+
+            <!-- ÁREA SORTEIO -->
+            <div class="area-sorteio">
+                <div class="bola-numero" id="bolaNumero">?</div>
+                
+                <!-- Histórico de Bolas -->
+                <div id="historicoNumeros" class="historico-container">
+                    <!-- Bolas pequenas aqui -->
+                </div>
+
+                <div class="headline-regra">
+                    <span>GANHA QUEM COMPLETAR:</span>
+                    <strong id="textoRegraRodada">${textoRegra}</strong>
+                </div>
+            </div>
+
+            <!-- JOGADORES (Faltam X) -->
+            <div class="painel-jogadores" id="painelJogadores"></div>
+
+            <!-- CARTELA CENTRAL -->
+            <div class="cartela-wrapper">
+                <div class="cartela3d">
+                    <div class="cartela-titulo-bingo">
+                        <span class="letra-bingo">B</span>
+                        <span class="letra-bingo">I</span>
+                        <span class="letra-bingo">N</span>
+                        <span class="letra-bingo">G</span>
+                        <span class="letra-bingo">O</span>
+                    </div>
+                    <div class="cartela-grid" id="cartelaGrid">
+                        <!-- Células geradas via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTROLES -->
+            <div class="painel-alerta" id="painelAlerta"></div>
+
+            <div class="jogo-controles">
+                <button id="btnToggleSorteio" class="btn btn-principal">INICIAR SORTEIO</button>
+                <button id="btnMenu" class="btn btn-secundario">MENU</button>
+            </div>
+        </div>
+    `;
+
+    // Eventos
+    const btnAdd = document.getElementById('btnAdicionarSaldoJogo');
+    if (btnAdd) {
+        btnAdd.onclick = () => {
+            state.user.saldo += 100;
+            salvarDados();
+            const el = document.getElementById('saldoHeader');
+            if (el) el.innerText = state.user.saldo;
+        };
+    }
+
+    const btnToggle = document.getElementById('btnToggleSorteio');
+    if (btnToggle) {
+        btnToggle.onclick = toggleSorteio;
+    }
+
+    const btnMenu = document.getElementById('btnMenu');
+    if (btnMenu) {
+        btnMenu.onclick = () => {
+            if (confirm("Quer mesmo sair? O jogo atual será perdido.")) {
+                renderizarTela('config');
             }
+        };
+    }
+
+    renderizarCartelaVisual();
+    atualizarPainelJogadores();
+}
+
+// --- 4. LÓGICA DO JOGO ---
+
+function iniciarPartida() {
+    state.user.saldo -= state.config.aposta;
+    salvarDados();
+
+    state.jogo.pausado = true;
+    state.jogo.vencedor = null;
+    state.jogo.numerosSorteados = [];
+    state.jogo.numerosDisponiveis = Array.from({length: 75}, (_, i) => i + 1);
+    
+    state.jogo.cartelaHumano = gerarCartelaNumeros();
+    state.jogo.cartelasBots = [];
+    
+    const botsEmbaralhados = [...BOTS_NAMES].sort(() => Math.random() - 0.5);
+    for(let i=0; i < state.config.numJogadores; i++) {
+        state.jogo.cartelasBots.push({
+            nome: botsEmbaralhados[i],
+            numeros: gerarCartelaNumeros()
+        });
+    }
+
+    renderizarTela('jogo');
+}
+
+function gerarCartelaNumeros() {
+    const faixas = [[1,15], [16,30], [31,45], [46,60], [61,75]];
+    const cartelaLinear = []; 
+    
+    const cols = [];
+    for(let c=0; c<5; c++) {
+        const nums = [];
+        while(nums.length < 5) {
+            const r = Math.floor(Math.random() * (faixas[c][1] - faixas[c][0] + 1)) + faixas[c][0];
+            if(!nums.includes(r)) nums.push(r);
+        }
+        cols.push(nums);
+    }
+
+    for(let l=0; l<5; l++) {
+        for(let c=0; c<5; c++) {
+            cartelaLinear.push(cols[c][l]);
+        }
+    }
+    return cartelaLinear;
+}
+
+function renderizarCartelaVisual() {
+    const grid = document.getElementById('cartelaGrid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    state.jogo.cartelaHumano.forEach(num => {
+        const div = document.createElement('div');
+        div.className = 'celula-bingo';
+        div.innerText = num;
+        div.dataset.numero = num;
+        div.onclick = () => clicarNumero(num, div);
+        grid.appendChild(div);
+    });
+}
+
+function clicarNumero(num, elemento) {
+    // IMPORTANTE: Só marca se o número já foi sorteado (validação de regra),
+    // mas o jogador deve clicar por conta própria. Sem dicas visuais antes.
+    if (state.jogo.numerosSorteados.includes(num)) {
+        if (!elemento.classList.contains('marcada')) {
+            elemento.classList.add('marcada');
+            verificarVitoriaHumano();
+            atualizarPainelJogadores(); 
+        }
+    } else {
+        // Feedback opcional de erro (vibração leve se mobile)
+        if (navigator.vibrate) navigator.vibrate(50);
+    }
+}
+
+function toggleSorteio() {
+    if (state.jogo.vencedor) return;
+
+    const btn = document.getElementById('btnToggleSorteio');
+    if (!btn) return;
+
+    if (state.jogo.pausado) {
+        state.jogo.pausado = false;
+        btn.innerText = "PAUSAR";
+        btn.classList.remove('btn-principal');
+        btn.classList.add('btn-secundario');
+        
+        sortearProximoNumero();
+        state.jogo.intervaloSorteio = setInterval(sortearProximoNumero, 3500); // Mais tempo para o jogador procurar
+    } else {
+        pausarSorteio();
+    }
+}
+
+function pausarSorteio() {
+    state.jogo.pausado = true;
+    if (state.jogo.intervaloSorteio) clearInterval(state.jogo.intervaloSorteio);
+    state.jogo.intervaloSorteio = null;
+
+    const btn = document.getElementById('btnToggleSorteio');
+    if (btn) {
+        btn.innerText = "CONTINUAR SORTEIO";
+        btn.classList.remove('btn-secundario');
+        btn.classList.add('btn-principal');
+    }
+}
+
+function sortearProximoNumero() {
+    if (state.jogo.numerosDisponiveis.length === 0) {
+        pausarSorteio();
+        alert("Todos os números foram sorteados!");
+        return;
+    }
+    if (state.jogo.vencedor) return;
+
+    // --- ALGORITMO "MÃOZINHA" (70% chance) ---
+    const faltamHumano = calcularFaltantes(state.jogo.cartelaHumano);
+    let numeroSorteado;
+    let manipulado = false;
+
+    if (faltamHumano.count <= 4 && Math.random() < 0.7) {
+        const uteisDisponiveis = state.jogo.numerosDisponiveis.filter(n => state.jogo.cartelaHumano.includes(n));
+        if (uteisDisponiveis.length > 0) {
+            const idx = Math.floor(Math.random() * uteisDisponiveis.length);
+            numeroSorteado = uteisDisponiveis[idx];
+            const idxGlobal = state.jogo.numerosDisponiveis.indexOf(numeroSorteado);
+            state.jogo.numerosDisponiveis.splice(idxGlobal, 1);
+            manipulado = true;
+        }
+    }
+
+    if (!manipulado) {
+        const idx = Math.floor(Math.random() * state.jogo.numerosDisponiveis.length);
+        numeroSorteado = state.jogo.numerosDisponiveis.splice(idx, 1)[0];
+    }
+
+    state.jogo.numerosSorteados.push(numeroSorteado);
+
+    // Atualiza UI
+    const elBola = document.getElementById('bolaNumero');
+    if (elBola) {
+        elBola.innerText = numeroSorteado;
+        elBola.style.animation = 'none';
+        elBola.offsetHeight; 
+        elBola.style.animation = 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    }
+
+    // Atualizar Histórico Visual
+    atualizarHistoricoVisual();
+
+    // Narrar
+    falarTexto(`Número ${numeroSorteado}`);
+
+    // NOTA: Não destacamos mais a célula automaticamente. O jogador deve encontrar.
+
+    verificarVitoriaBots();
+    // Atualiza painel jogadores mas com base no que foi SORTEADO, pra dar emoção de "falta pouco",
+    // mesmo que o jogador não tenha marcado ainda.
+    atualizarPainelJogadores();
+}
+
+function atualizarHistoricoVisual() {
+    const container = document.getElementById('historicoNumeros');
+    if (!container) return;
+
+    // Pegar os últimos 5
+    const recentes = state.jogo.numerosSorteados.slice(-5).reverse();
+    
+    container.innerHTML = '';
+    recentes.forEach(num => {
+        const bolinha = document.createElement('div');
+        bolinha.className = 'bola-pequena';
+        bolinha.innerText = num;
+        container.appendChild(bolinha);
+    });
+}
+
+// --- CÁLCULOS DE VITÓRIA ---
+
+function calcularFaltantes(cartelaNumeros) {
+    const sorteados = state.jogo.numerosSorteados;
+    const regra = state.config.regra;
+    
+    let minFalta = 25;
+
+    // Linhas
+    if (regra === 'linha' || regra === 'cartela') {
+        for(let r=0; r<5; r++) {
+            let faltaLinha = 0;
+            for(let c=0; c<5; c++) {
+                if (!sorteados.includes(cartelaNumeros[r*5 + c])) faltaLinha++;
+            }
+            if (regra === 'linha' && faltaLinha < minFalta) minFalta = faltaLinha;
+        }
+    }
+
+    // Colunas
+    if (regra === 'coluna' || regra === 'cartela') {
+        for(let c=0; c<5; c++) {
+            let faltaCol = 0;
+            for(let r=0; r<5; r++) {
+                if (!sorteados.includes(cartelaNumeros[r*5 + c])) faltaCol++;
+            }
+            if (regra === 'coluna' && faltaCol < minFalta) minFalta = faltaCol;
+        }
+    }
+
+    // Cartela Cheia
+    if (regra === 'cartela') {
+        let faltaTotal = 0;
+        cartelaNumeros.forEach(n => {
+            if (!sorteados.includes(n)) faltaTotal++;
+        });
+        minFalta = faltaTotal;
+    }
+
+    return { count: minFalta, isWinner: minFalta === 0 };
+}
+
+function verificarVitoriaHumano() {
+    // Humano só ganha se tiver MARCADO os números na cartela
+    const marcadosElements = document.querySelectorAll('.celula-bingo.marcada');
+    const marcadosNumeros = Array.from(marcadosElements).map(el => parseInt(el.dataset.numero));
+    
+    const regra = state.config.regra;
+    const cartela = state.jogo.cartelaHumano;
+    
+    let venceu = false;
+
+    if (regra === 'cartela') {
+        venceu = cartela.every(n => marcadosNumeros.includes(n));
+    } else {
+        for(let r=0; r<5; r++) {
+            let linhaOk = true;
+            for(let c=0; c<5; c++) if(!marcadosNumeros.includes(cartela[r*5+c])) linhaOk=false;
+            if(linhaOk && regra === 'linha') venceu = true;
+        }
+        for(let c=0; c<5; c++) {
+            let colOk = true;
+            for(let r=0; r<5; r++) if(!marcadosNumeros.includes(cartela[r*5+c])) colOk=false;
+            if(colOk && regra === 'coluna') venceu = true;
+        }
+    }
+
+    if (venceu) finalizarJogo(true, state.user.nome);
+}
+
+function verificarVitoriaBots() {
+    state.jogo.cartelasBots.forEach(bot => {
+        const status = calcularFaltantes(bot.numeros);
+        if (status.isWinner) {
+            setTimeout(() => {
+                if (!state.jogo.vencedor) finalizarJogo(false, bot.nome);
+            }, 500);
+        }
+    });
+}
+
+function atualizarPainelJogadores() {
+    const painel = document.getElementById('painelJogadores');
+    if (!painel) return;
+
+    const stHumano = calcularFaltantes(state.jogo.cartelaHumano);
+    
+    let html = `<div class="jogador-pill humano ${stHumano.count <= 3 ? 'perigo' : ''}">Você: faltam ${stHumano.count}</div>`;
+    
+    let menorFaltaBot = 99;
+    let nomeLiderBot = '';
+
+    state.jogo.cartelasBots.forEach(bot => {
+        const st = calcularFaltantes(bot.numeros);
+        if (st.count < menorFaltaBot) {
+            menorFaltaBot = st.count;
+            nomeLiderBot = bot.nome;
+        }
+        html += `<div class="jogador-pill">${bot.nome}: faltam ${st.count}</div>`;
+    });
+
+    painel.innerHTML = html;
+
+    const alerta = document.getElementById('painelAlerta');
+    if (alerta) {
+        if (stHumano.count === 1) {
+            alerta.innerHTML = `<span class="alerta-bingo" style="background:var(--color-gold); color:black">FALTA 1 PARA VOCÊ!</span>`;
+        } else if (menorFaltaBot === 1) {
+            alerta.innerHTML = `<span class="alerta-bingo">ATENÇÃO: Falta 1 para ${nomeLiderBot}!</span>`;
+        } else if (stHumano.count <= 3) {
+            alerta.innerHTML = `<span class="alerta-bingo" style="background:#2b4591">Faltam ${stHumano.count} para você.</span>`;
+        } else {
+            alerta.innerHTML = '';
+        }
+    }
+}
+
+function finalizarJogo(humanoVenceu, nomeVencedor) {
+    if (state.jogo.vencedor) return;
+    state.jogo.vencedor = nomeVencedor;
+    pausarSorteio();
+
+    let titulo = humanoVenceu ? "BINGO! PARABÉNS!" : "FIM DE JOGO";
+    let corTitulo = humanoVenceu ? "var(--color-gold)" : "#ccc";
+    let premio = 0;
+    
+    if (humanoVenceu) {
+        let mult = state.config.regra === 'cartela' ? 5 : (state.config.regra === 'coluna' ? 3 : 2);
+        premio = state.config.aposta * mult;
+        state.user.saldo += premio;
+        salvarDados();
+        falarTexto("Bingo! Parabéns, você venceu!");
+    } else {
+        falarTexto(`O jogador ${nomeVencedor} bateu o bingo.`);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+        <div class="card card-vitoria">
+            <h1 class="titulo-app" style="color:${corTitulo}; font-size:2.5rem">${titulo}</h1>
+            <p style="font-size:1.2rem; margin:1rem 0">${humanoVenceu ? 'Você completou a cartela!' : `${nomeVencedor} completou primeiro.`}</p>
+            ${humanoVenceu ? `<span class="texto-premio">+${premio} Moedas</span>` : ''}
             
-            $('modal-end').classList.remove('hidden');
-        }
+            <button id="btnJogarNovamente" class="btn btn-principal">JOGAR NOVAMENTE</button>
+            <button id="btnVoltarMenu" class="btn btn-secundario">MENU INICIAL</button>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
 
-        function closeEnd() {
-            $('modal-end').classList.add('hidden');
-            switchScr('screen-config');
-        }
+    document.getElementById('btnJogarNovamente').onclick = () => {
+        overlay.remove();
+        renderizarTela('config');
+    };
+    document.getElementById('btnVoltarMenu').onclick = () => {
+        location.reload();
+    };
+}
 
-        function quit() {
-            if(confirm('Deseja realmente sair?')) {
-                stop(); window.speechSynthesis.cancel();
-                switchScr('screen-config');
-            }
-        }
-    </script>
+// --- INICIALIZAÇÃO ---
+window.onload = () => {
+    carregarDados();
+    carregarVozes();
+    renderizarTela('inicial');
+};
+
+</script>
 </body>
 </html>
