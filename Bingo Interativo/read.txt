@@ -2,1024 +2,784 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schola da Mente - Bingo</title>
-    <!-- 1. Tailwind CSS para estilos rápidos e responsivos -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Schola da Mente - Bingo da Mente</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. Tone.js para sintetizar sons (sem arquivos externos) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
 
-    <!-- 3. Estilos CSS Embutidos -->
     <style>
-        /* Fonte limpa e legível */
+        /* --- Configurações Globais --- */
+        :root {
+            --gold: #FFD700;
+            --gold-dark: #B8860B;
+            --royal-blue: #2b4cba; 
+            --royal-dark: #0f1c4d;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-            background-color: #f0f4f8;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--royal-dark);
+            color: white;
+            overflow: hidden; 
+            touch-action: manipulation;
+            background-image: radial-gradient(circle at 50% 40%, var(--royal-blue) 0%, #020410 100%);
         }
 
-        /* Globo de Sorteio */
-        #globo {
-            width: 150px;
-            height: 150px;
-            background: linear-gradient(145deg, #007BFF, #00C6FF); /* Novo gradiente azul */
-            border: 8px solid white;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2), inset 0 5px 15px rgba(255,255,255,0.4);
+        .vegas-font { font-family: 'Righteous', cursive; letter-spacing: 1px; }
+
+        /* --- CARTELA (RESPONSIVIDADE MÁXIMA) --- */
+        .cards-wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 2vmin;
+            width: 100%;
+            height: 100%;
+            padding: 1vmin;
         }
 
-        /* Grade de Números Sorteados */
-        .numero-grid {
-            width: 40px;
-            height: 40px;
-            font-size: 0.9rem;
-            font-weight: bold;
+        .bingo-card {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: auto repeat(5, 1fr);
+            gap: 1vmin;
+            
+            /* Lógica para Tela Total */
+            width: auto;
+            height: auto;
+            /* Tenta ocupar o máximo possível sem sair da tela */
+            max-width: 98%;
+            max-height: 98%;
+            aspect-ratio: 5 / 6.2;
+            
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 1.5vmin;
+            border-radius: 1.5rem;
+            border: 0.4vmin solid var(--gold);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 0 2px rgba(255, 215, 0, 0.3);
+            position: relative;
+        }
+
+        @media (orientation: portrait) {
+            .cards-wrapper { flex-direction: column; }
+            /* Em pé: foca na largura */
+            .bingo-card { width: 95vw; height: auto; max-height: 65vh; }
+        }
+        @media (orientation: landscape) {
+            /* Deitado: foca na altura */
+            .bingo-card { height: 90vh; width: auto; max-width: 60vw; }
+        }
+
+        /* CABEÇALHO B I N G O */
+        .header-cell {
+            background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+            color: white;
+            font-family: 'Righteous', cursive;
+            font-size: clamp(1.2rem, 5vmin, 3rem);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
-            background-color: #e0e0e0;
-            color: #555;
-            transition: all 0.3s ease;
+            border-radius: 0.5rem;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.3), 0 2px 5px rgba(0,0,0,0.4);
+            aspect-ratio: 1;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
-        .numero-grid.sorteado {
-            background-color: #0d9488;
-            color: white;
-            transform: scale(1.1);
-        }
-
-        /* Estilos para a Cartela (Principal e Pré-visualização) */
-        .cartela-base {
-            background-color: #fff;
-            border: 4px solid #1d4ed8;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            padding: 1rem;
-        }
-        
-        .cartela-preview {
-            cursor: pointer;
-            transition: all 0.2s ease-out;
-        }
-        .cartela-preview:hover {
-            transform: scale(1.05);
-            border-color: #f97316; /* Laranja no hover */
-        }
-        
-        .cartela-header {
-            font-size: 2.5rem;
+        .num-cell {
+            background: #f8fafc;
+            color: #0f172a;
             font-weight: 900;
-            color: #1d4ed8;
-            letter-spacing: 0.2em;
-        }
-
-        .cartela-celula {
-            width: 70px;
-            height: 70px;
-            font-size: 1.75rem;
-            font-weight: bold;
+            font-size: clamp(1.5rem, 6vmin, 4.5rem); /* Fonte gigante responsiva */
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid #93c5fd;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            cursor: pointer; /* Essencial para marcação manual */
+            border-radius: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.15);
+            transition: transform 0.1s;
         }
-        
-        /* Células na tela de pré-visualização são menores */
-        .cartela-preview .cartela-celula {
-            width: 50px;
-            height: 50px;
-            font-size: 1.25rem;
+        .num-cell:active { transform: scale(0.95); }
+
+        .num-cell.marked {
+            background: radial-gradient(circle at 30% 30%, var(--gold) 0%, var(--gold-dark) 85%);
+            color: #3f2e00;
+            border: 2px solid #fffacd;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transform: scale(0.98);
         }
 
-        .cartela-celula.marcado {
-            background-color: #f97316; /* Laranja */
-            color: white;
-            transform: rotate(5deg) scale(1.1);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
+        .num-cell.free { background: #cbd5e1; color: #64748b; }
+        .num-cell.free.marked { background: radial-gradient(circle, #ffd700, #b8860b); color: #4a3800; }
 
-        .cartela-celula.livre {
-            background-color: #ec4899; /* Cor-de-rosa */
-            color: white;
-            font-size: 1.25rem;
-            line-height: 1.2;
-            cursor: default;
+        .num-cell.shake { animation: shake 0.4s ease-in-out; background-color: #fecaca; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+        /* UI Elements */
+        .ball-history-item {
+            width: 1.8rem; height: 1.8rem;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            color: #cbd5e1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: bold;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.2);
         }
-        
-        .cartela-preview .cartela-celula.livre {
-            font-size: 0.8rem;
+        .ball-history-item.latest {
+            width: 2.2rem; height: 2.2rem;
+            background: var(--gold); color: black;
+            border-color: white;
+            font-size: 1rem;
+            box-shadow: 0 0 15px var(--gold);
+            animation: pulse-gold 1s infinite;
         }
+        @keyframes pulse-gold { 50% { box-shadow: 0 0 25px var(--gold); } }
 
         /* Botões */
-        .btn {
-            padding: 1rem 1.5rem;
-            font-size: 1.25rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        .btn-action {
+            background: linear-gradient(to bottom, #22c55e, #15803d);
+            border-bottom: 2px solid #14532d;
+            color: white; font-weight: bold;
+            transition: all 0.1s;
+        }
+        .btn-action:active { transform: translateY(2px); border-bottom: 0; }
+        
+        .btn-yellow {
+            background: linear-gradient(to bottom, #eab308, #ca8a04);
+            border-bottom: 2px solid #854d0e;
+            color: black;
         }
         
-        .btn-iniciar {
-            background-color: #16a34a;
-            color: white;
-        }
-        .btn-iniciar:hover {
-            background-color: #15803d;
-        }
-        .btn-iniciar:disabled {
-            background-color: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .btn-resetar {
-            background-color: #dc2626;
-            color: white;
-        }
-        .btn-resetar:hover {
-            background-color: #b91c1c;
-        }
-
-        /* Painel Social (Bots) */
-        #painel-social {
-            background-color: #fff;
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        
-        .bot-status {
-            font-size: 1.15rem;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .bot-status .status.falta-1 {
-            color: #dc2626;
-            animation: pulse 1s infinite;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.6);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background-color: #fefefe;
-            padding: 2.5rem;
-            border: 8px solid #f97316;
+        /* Pills de Rivais */
+        .rival-pill {
+            background: rgba(0,0,0,0.4);
+            padding: 2px 6px;
             border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            animation: zoomIn 0.3s ease-out;
+            font-size: 0.7rem;
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            white-space: nowrap;
         }
+        .rival-pill.warn-3 { border-color: #facc15; color: #fef08a; }
+        .rival-pill.warn-2 { border-color: #f97316; color: #fdba74; font-weight: bold; }
+        .rival-pill.warn-1 { 
+            border-color: #ef4444; color: #fff; background: #dc2626; 
+            font-weight: bold; animation: pulse-red 0.8s infinite; 
+        }
+        @keyframes pulse-red { 50% { transform: scale(1.05); } }
+
+        .modal-bg { background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Animações */
-        @keyframes zoomIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
+        /* Alerta piscante */
+        .alert-text { animation: flash-text 0.5s infinite alternate; color: #ffeb3b; }
+        @keyframes flash-text { from { opacity: 1; } to { opacity: 0.5; } }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
+        /* Config Buttons */
+        .btn-select {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            color: #cbd5e1;
+            font-weight: bold;
+            transition: all 0.2s;
         }
-        
-        /* Animação de "shake" para clique errado */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-        }
-        .shake {
-            animation: shake 0.3s ease-out;
-        }
-        
-        /* Confete */
-        .confetti {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 200;
-            overflow: hidden;
-        }
-        .confetto {
-            position: absolute;
-            width: 10px;
-            height: 20px;
-            background-color: #f00;
-            opacity: 0.7;
-            animation: fall 5s linear infinite;
-        }
-        @keyframes fall {
-            to {
-                transform: translateY(100vh) rotate(720deg);
-                opacity: 0;
-            }
+        .btn-select.active {
+            background: rgba(0,0,0,0.3);
+            border-color: var(--gold);
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
         }
     </style>
 </head>
-<body class="bg-blue-50 text-gray-800 p-4 md:p-8">
+<body class="h-screen flex flex-col">
 
-    <div class="max-w-7xl mx-auto">
-        <!-- CABEÇALHO -->
-        <header class="text-center my-6">
-            <h1 class="text-4xl md:text-6xl font-extrabold text-blue-800">Schola da Mente - Bingo</h1>
-        </header>
+    <!-- TELA 1: WELCOME -->
+    <section id="screen-welcome" class="flex-grow flex flex-col items-center justify-center p-4 relative z-10 text-center">
+        <div class="mb-6 p-5 rounded-full border-4 border-yellow-500 bg-black/40 shadow-[0_0_50px_rgba(43,76,186,0.6)] animate-pulse">
+            <i class="fas fa-gem text-5xl md:text-7xl text-yellow-400"></i>
+        </div>
+        <h1 class="text-5xl md:text-7xl text-yellow-400 mb-2 vegas-font drop-shadow-lg">BINGO</h1>
+        <h2 class="text-xl text-blue-200 font-light tracking-widest mb-8 uppercase">Schola da Mente</h2>
+        
+        <div class="w-full max-w-sm">
+            <input type="text" id="inp-name" class="w-full p-4 mb-4 rounded-xl bg-black/30 text-white text-center text-xl border border-blue-500 focus:border-yellow-400 outline-none backdrop-blur-sm placeholder-blue-300" placeholder="Digite seu nome">
+            <button onclick="goConfig()" class="w-full btn-action py-4 rounded-xl text-xl shadow-lg uppercase tracking-wide">ENTRAR</button>
+        </div>
+    </section>
 
-        <!-- PAINEL DE CONTROLE (PRÉ-JOGO) -->
-        <div id="painel-configuracoes" class="bg-white p-6 rounded-xl shadow-lg mb-8 flex flex-col md:flex-row gap-6 items-center justify-center">
-            <div>
-                <label for="nome-jogador" class="block text-xl font-bold text-gray-700 mb-2">Seu Nome:</label>
-                <input type="text" id="nome-jogador" placeholder="Digite seu nome" class="p-3 text-xl border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500">
+    <!-- TELA 2: CONFIG -->
+    <section id="screen-config" class="hidden flex-grow flex flex-col items-center justify-center p-4 overflow-y-auto">
+        <div class="w-full max-w-xl bg-black/40 border border-blue-500/30 rounded-3xl shadow-2xl p-6 backdrop-blur-md">
+            <h2 class="text-3xl text-yellow-400 text-center vegas-font mb-6">PREPARAR MESA</h2>
+            <div class="space-y-5">
+                <!-- Cartelas -->
+                <div>
+                    <label class="text-blue-300 uppercase text-[10px] font-bold tracking-wide block mb-2">Suas Cartelas</label>
+                    <div class="flex gap-3">
+                        <button onclick="setCards(1)" class="flex-1 py-3 btn-select rounded-xl" id="btn-c1">1 CARTELA</button>
+                        <button onclick="setCards(2)" class="flex-1 py-3 btn-select rounded-xl" id="btn-c2">2 CARTELAS</button>
+                    </div>
+                </div>
+                
+                <!-- Adversários -->
+                <div>
+                    <label class="text-blue-300 uppercase text-[10px] font-bold tracking-wide block mb-2">Adversários (Nível de Tensão)</label>
+                    <div class="grid grid-cols-4 gap-2">
+                         <button onclick="setBots(1)" class="py-3 btn-select rounded-xl" id="btn-b1">1</button>
+                         <button onclick="setBots(3)" class="py-3 btn-select rounded-xl" id="btn-b3">3</button>
+                         <button onclick="setBots(7)" class="py-3 btn-select rounded-xl" id="btn-b7">7</button>
+                         <button onclick="setBots(10)" class="py-3 btn-select rounded-xl" id="btn-b10">10</button>
+                    </div>
+                </div>
+
+                <!-- Regra -->
+                <div>
+                     <label class="text-blue-300 uppercase text-[10px] font-bold tracking-wide block mb-2">Objetivo</label>
+                     <select id="sel-rule" class="w-full p-3 bg-black/50 text-white rounded-xl border border-blue-500/30 text-sm focus:border-yellow-400 outline-none" onchange="updatePot()">
+                         <option value="line">Fazer uma LINHA (Rápido)</option>
+                         <option value="full">Cartela CHEIA (Clássico)</option>
+                     </select>
+                </div>
+
+                <!-- Painel Financeiro -->
+                <div class="bg-blue-900/30 p-4 rounded-2xl border border-blue-500/30">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-blue-200 text-sm">Seu Saldo:</span>
+                        <span class="text-2xl font-bold text-yellow-400">$ <span id="ui-bal">500</span></span>
+                    </div>
+                    <label class="text-blue-300 uppercase text-[10px] font-bold tracking-wide block mb-1">Aposta</label>
+                    <div class="flex gap-2 mb-3">
+                        <button onclick="setBet(10)" class="flex-1 py-2 bg-black/40 rounded-lg text-xs font-bold border border-blue-500/30 hover:bg-blue-600/50">10</button>
+                        <button onclick="setBet(50)" class="flex-1 py-2 bg-black/40 rounded-lg text-xs font-bold border border-blue-500/30 hover:bg-blue-600/50">50</button>
+                        <button onclick="setBet(100)" class="flex-1 py-2 bg-black/40 rounded-lg text-xs font-bold border border-blue-500/30 hover:bg-blue-600/50">100</button>
+                    </div>
+                    <div class="text-center bg-green-900/40 p-2 rounded-lg border border-green-500/30">
+                        <span class="text-green-300 text-[10px] uppercase block">Se vencer, você ganha:</span>
+                        <span class="font-bold text-2xl text-green-400">$ <span id="ui-pot">0</span></span>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label for="modo-jogo" class="block text-xl font-bold text-gray-700 mb-2">Modo de Jogo:</label>
-                <select id="modo-jogo" class="p-3 text-xl border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500">
-                    <option value="rapido">Rápido (3x3, 30 bolas)</option>
-                    <option value="classico">Clássico (5x5, 75 bolas)</option>
-                </select>
+            <button onclick="startGame()" class="w-full mt-6 btn-action py-4 rounded-xl text-xl shadow-xl uppercase tracking-widest">JOGAR AGORA</button>
+        </div>
+    </section>
+
+    <!-- TELA 3: JOGO -->
+    <section id="screen-game" class="hidden h-full flex-col">
+        
+        <!-- HEADER INFORMATIVO OTIMIZADO -->
+        <div class="bg-black/20 backdrop-blur-md border-b border-white/10 pt-2 pb-2 px-3 shrink-0 z-20 shadow-lg">
+            
+            <!-- Linha Principal: Estrutura em 3 colunas (Esq, Centro, Dir) -->
+            <div class="flex items-center justify-between gap-2 mb-1">
+                
+                <!-- Esquerda: Jogador e Saldo -->
+                <div class="flex flex-col items-start min-w-[80px]">
+                    <div class="text-yellow-400 font-bold text-sm truncate max-w-[120px] drop-shadow-sm" id="game-pname">😎 JOGADOR</div>
+                    <div class="text-[10px] text-blue-200 font-bold mt-0.5">Saldo: <span class="text-white text-base">$ <span id="game-bal">500</span></span></div>
+                </div>
+
+                <!-- Centro: HEADLINE DA RODADA -->
+                <div class="flex-grow text-center px-1">
+                    <div class="text-[10px] md:text-xs text-yellow-300 uppercase tracking-widest font-bold bg-black/40 px-2 py-1 rounded-full border border-yellow-500/30 shadow-sm leading-tight" id="game-rule-text">
+                        NESTA RODADA GANHA QUEM: ---
+                    </div>
+                </div>
+
+                <!-- Direita: Prêmio -->
+                <div class="flex flex-col items-end min-w-[80px]">
+                    <div class="text-[9px] text-green-300 uppercase tracking-widest">Prêmio</div>
+                    <div class="text-xl font-bold text-green-400 leading-none drop-shadow-md">$ <span id="game-pot">0</span></div>
+                </div>
             </div>
-            <button id="btn-iniciar" class="btn btn-iniciar self-center md:self-end mt-4 md:mt-0">
-                Escolher Cartela
-            </button>
+
+            <!-- Linha Secundária: Histórico e Rivais -->
+            <div class="flex flex-col gap-1 mt-1">
+                <!-- Histórico -->
+                <div class="flex items-center gap-2 h-10 bg-black/30 rounded-lg px-2 relative overflow-hidden border border-white/5">
+                    <div class="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/80 to-transparent z-10"></div>
+                    <div id="ball-history" class="flex items-center gap-1 overflow-x-auto no-scrollbar w-full flex-row-reverse px-2">
+                        <span class="text-[10px] text-blue-300 italic">...</span>
+                    </div>
+                </div>
+                
+                <!-- Rivais -->
+                <div id="rivals-bar" class="flex gap-2 overflow-x-auto no-scrollbar py-1 min-h-[24px]"></div>
+            </div>
         </div>
         
-        <!-- TELA DE ESCOLHA DE CARTELA (NOVO) -->
-        <div id="tela-escolha" class="text-center" style="display: none;">
-            <h2 id="titulo-escolha" class="text-3xl font-bold text-gray-800 mb-6"></h2>
-            <div id="container-previews" class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                <!-- Cartelas de pré-visualização serão injetadas aqui -->
-            </div>
+        <!-- Mensagem de Tensão / Benefícios -->
+        <div class="bg-black/40 text-center py-0.5 shrink-0 min-h-[22px]">
+            <span id="game-msg" class="text-blue-100 text-[10px] uppercase tracking-widest font-bold">Boa Sorte!</span>
         </div>
 
-        <!-- NOVO: TÍTULO DA RODADA -->
-        <h2 id="titulo-rodada" class="text-center text-3xl md:text-4xl font-bold text-orange-600 mb-6" style="display: none;"></h2>
+        <!-- ÁREA CENTRAL (CARTELAS) -->
+        <div id="game-area" class="flex-grow relative overflow-y-auto flex flex-col justify-center bg-transparent">
+            <!-- Cartelas injetadas aqui -->
+        </div>
 
-        <!-- ÁREA PRINCIPAL DO JOGO -->
-        <main id="area-jogo" class="flex flex-col-reverse md:flex-row gap-8" style="display: none;">
-
-            <!-- Coluna Esquerda/Principal: Globo e Cartela do Jogador -->
-            <div class="flex-grow md:w-2/3">
-                <!-- Globo -->
-                <div class="flex justify-center mb-8">
-                    <div id="globo" class="rounded-full text-white text-6xl font-bold flex items-center justify-center shadow-xl">
-                        --
-                    </div>
-                </div>
-
-                <!-- Container da Cartela (agora só 1) -->
-                <div id="container-cartelas-jogador" class="flex justify-center">
-                    <!-- A cartela escolhida será injetada aqui -->
-                </div>
-            </div>
-
-            <!-- Coluna Direita/Lateral: Grade de Sorteio e Bots -->
-            <aside class="md:w-1/3 space-y-6">
-                <!-- Painel Social (Bots) -->
-                <div id="painel-social" class="bg-white p-5 rounded-xl shadow-lg">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 pb-2">Outros Jogadores na Sala</h2>
-                    <div id="lista-bots" class="space-y-3">
-                        <!-- Status dos bots será injetado aqui -->
-                    </div>
-                </div>
-
-                <!-- NOVO: Ordem do Sorteio -->
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Números Sorteados na Sequência</h2>
-                    <div id="ordem-sorteio-container" class="bg-white p-4 rounded-xl shadow-lg h-32 overflow-y-auto flex flex-wrap gap-2">
-                        <!-- Números sorteados em ordem -->
-                    </div>
-                </div>
-
-                <!-- Grade de Números Sorteados (REMOVIDO) -->
-                <!-- 
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Números Sorteados (Grade)</h2>
-                    <div id="grade-sorteio" class="bg-white p-4 rounded-xl shadow-lg">
-                    </div>
-                </div>
-                 -->
-
-                <!-- Botão de Resetar (Pós-Jogo) -->
-                <button id="btn-resetar" class="btn btn-resetar w-full" style="display: none;">
-                    Jogar Novamente
+        <!-- FOOTER CONTROLS (BOTÕES MENORES) -->
+        <div class="bg-black/30 backdrop-blur-md border-t border-white/10 p-2 shrink-0 z-20 safe-area-bottom">
+            <div class="flex items-center justify-between gap-3 max-w-md mx-auto">
+                <button onclick="quit()" class="px-3 py-2 rounded-lg bg-white/10 text-blue-200 border border-white/10 text-[10px] font-bold hover:bg-white/20">
+                    <i class="fas fa-arrow-left"></i> MENU
                 </button>
-            </aside>
-        </main>
-    </div>
+                
+                <button onclick="togglePlay()" id="btn-play" class="flex-grow h-10 rounded-lg btn-action text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide">
+                    <i class="fas fa-play"></i> <span>Começar</span>
+                </button>
 
-    <!-- Modal de Fim de Jogo -->
-    <div id="modal-fim-jogo" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h2 id="modal-titulo" class="text-orange-600">BINGO!</h2>
-            <!-- NOVO: Imagem do Prêmio -->
-            <img id="modal-imagem-premio" src="https://placehold.co/200x200/28a745/white?text=Pr%C3%AAmio" alt="Imagem do Prêmio" class="w-40 h-40 mx-auto my-4 rounded-lg shadow-md object-cover" style="display: none;">
-            <p id="modal-mensagem" class="text-lg">Parabéns! Você venceu!</p>
-            <button id="btn-fechar-modal" class="btn btn-iniciar mt-4">
-                OK
-            </button>
+                 <button onclick="toggleMute()" class="w-10 h-10 rounded-lg bg-white/10 text-blue-200 border border-white/10 flex items-center justify-center hover:bg-white/20">
+                    <i id="icon-sound" class="fas fa-volume-up text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- MODAL VITORIA/DERROTA -->
+    <div id="modal-end" class="fixed inset-0 z-50 hidden modal-bg flex items-center justify-center p-6">
+        <div class="bg-blue-900/90 border-4 border-yellow-500 rounded-3xl p-6 text-center max-w-xs w-full relative overflow-hidden shadow-2xl backdrop-blur-xl" id="modal-border">
+            <div class="absolute inset-0 bg-white/5 animate-pulse pointer-events-none"></div>
+            
+            <h2 id="end-title" class="text-5xl text-yellow-400 vegas-font mb-2 drop-shadow-md">BINGO!</h2>
+            <p id="end-msg" class="text-white text-lg mb-4 font-bold">Vitória Incrível!</p>
+            
+            <div class="bg-black/40 p-4 rounded-xl mb-6 border border-white/10" id="prize-box">
+                <span class="text-blue-300 text-[10px] uppercase tracking-widest">Você Faturou</span>
+                <div class="text-4xl font-bold text-green-400 mt-1">$ <span id="win-amount">0</span></div>
+            </div>
+            
+            <button onclick="closeEnd()" class="w-full btn-action py-3 rounded-xl text-lg uppercase font-bold shadow-lg">Continuar</button>
         </div>
     </div>
-    
-    <!-- Efeito de Confete -->
-    <div id="confetti-container" class="confetti"></div>
 
-    <!-- 4. JavaScript Embutido -->
-            <script>
-        document.addEventListener('DOMContentLoaded', () => {
+    <!-- JS -->
+    <script>
+        var $ = function(id) { return document.getElementById(id); };
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Bots agora com Emojis
+        var botNames = [
+            "🤖 Maria", "🤠 José", "👩 Ana", "👴 Carlos", 
+            "🧑‍🦱 Pedro", "👵 Lúcia", "👨‍✈️ Paulo", "👩‍🏫 Fernanda", 
+            "👮 Roberto", "👩‍⚕️ Carla", "👸 Dona Iza", "🤴 Sr. João", "🧚 Bete"
+        ];
+        
+        // Frases focadas em benefícios
+        var phrases = [
+            "Exercita a memória!", 
+            "Melhora o foco!", 
+            "Estimula o raciocínio!",
+            "Mantém a mente ativa!", 
+            "Diversão saudável!", 
+            "Sua mente agradece!",
+            "Atenção na cartela!", 
+            "Respire e divirta-se!"
+        ];
+        
+        var S = {
+            scr: 'welcome', name: '', bal: 500, mute: false,
+            cfg: { cards: 1, rule: 'line', bet: 10, spd: 4500, botCount: 3 },
+            game: { active: false, pause: true, drawn: [], timer: null, cards: [], marks: [], bots: [] }
+        };
 
-            // --- 1. CONFIGURAÇÃO INICIAL ---
+        // --- AUDIO ---
+        function resumeAudio() { if (audioCtx.state === 'suspended') audioCtx.resume(); }
 
-            // Elementos da DOM
-            const btnIniciar = document.getElementById('btn-iniciar');
-            const btnResetar = document.getElementById('btn-resetar');
-            const btnFecharModal = document.getElementById('btn-fechar-modal');
-            
-            const painelConfiguracoes = document.getElementById('painel-configuracoes');
-            const telaEscolha = document.getElementById('tela-escolha');
-            const tituloEscolha = document.getElementById('titulo-escolha');
-            const containerPreviews = document.getElementById('container-previews');
-            
-            const areaJogo = document.getElementById('area-jogo');
-            // NOVO
-            const tituloRodadaEl = document.getElementById('titulo-rodada'); 
-            const ordemSorteioContainer = document.getElementById('ordem-sorteio-container');
+        function playSound(type) {
+            if(S.mute) return;
+            resumeAudio();
+            var now = audioCtx.currentTime;
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
 
-            const globoEl = document.getElementById('globo');
-            
-            // REMOVIDO:
-            // const gradeSorteioEl = document.getElementById('grade-sorteio'); 
-            
-            const containerCartelasEl = document.getElementById('container-cartelas-jogador');
-            const listaBotsEl = document.getElementById('lista-bots');
-            
-            const modalFimJogo = document.getElementById('modal-fim-jogo');
-            const modalTitulo = document.getElementById('modal-titulo');
-            const modalMensagem = document.getElementById('modal-mensagem');
-            const confettiContainer = document.getElementById('confetti-container');
-
-            const modoJogoEl = document.getElementById('modo-jogo');
-            const nomeJogadorEl = document.getElementById('nome-jogador');
-
-            // Estado do Jogo
-            let estado = {
-                nomeJogador: '',
-                modo: 'rapido',
-                jogoEmAndamento: false,
-                numerosDisponiveis: [],
-                numerosSorteados: new Set(),
-                cartelasJogador: [], // Só terá 1 cartela
-                bots: [],
-                intervaloSorteio: null,
-                limiteNumeros: 30,
-                colunasBingo: {},
-                premioAtual: null // NOVO
-            };
-            
-            // Prêmios simbólicos (NOVO - Atualizado com imagens)
-            const premiosSimbólicos = [
-                { nome: "R$ 500,00", imagemUrl: "https://placehold.co/200x200/28a745/white?text=R$500" },
-                { nome: "Um Celular Novo!", imagemUrl: "https://placehold.co/200x200/007bff/white?text=Celular" },
-                { nome: "Uma Viagem!", imagemUrl: "https://placehold.co/200x200/ffc107/black?text=Viagem" },
-                { nome: "Um Lindo Bezerro!", imagemUrl: "https://placehold.co/200x200/6f4e37/white?text=Bezerro" },
-                { nome: "Um Carneiro!", imagemUrl: "https://placehold.co/200x200/eeeeee/black?text=Carneiro" },
-                { nome: "Uma TV 8K!", imagemUrl: "https://placehold.co/200x200/333333/white?text=TV+8K" },
-                { nome: "Uma Cesta de Café da Manhã!", imagemUrl: "https://placehold.co/200x200/d2691e/white?text=Cesta" }
-            ];
-            
-            // Sintetizadores de Som
-            const sons = {
-                sorteio: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 } }).toDestination(),
-                marcar: new Tone.PluckSynth({ attackNoise: 0.5, dampening: 4000, resonance: 0.9 }).toDestination(),
-                vitoria: new Tone.PolySynth(Tone.Synth, { volume: -5, envelope: { attack: 0.05, decay: 0.5, sustain: 0.2, release: 0.5 } }).toDestination(),
-                erro: new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination() // Som de erro
-            };
-            
-            // Sintetizador de Voz (NOVO)
-            const synthVoz = window.speechSynthesis;
-            let voz = null;
-            // Carrega vozes e seleciona a pt-BR
-            function carregarVozes() {
-                const vozes = synthVoz.getVoices();
-                voz = vozes.find(v => v.lang === 'pt-BR');
-                if (!voz) {
-                    voz = vozes.find(v => v.lang.startsWith('pt-'));
-                }
-            }
-            // A lista de vozes pode demorar a carregar
-            carregarVozes();
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = carregarVozes;
-            }
-
-            // --- 2. LÓGICA DE GERAÇÃO (CARTELAS, BOTS, ETC) ---
-
-            function gerarNumerosAleatorios(min, max, count) {
-                const arr = [];
-                while (arr.length < count) {
-                    const r = Math.floor(Math.random() * (max - min + 1)) + min;
-                    if (arr.indexOf(r) === -1) arr.push(r);
-                }
-                return arr;
-            }
-
-            function criarCartela(id) {
-                const cartela = { id: `cartela-${id}`, numeros: [], marcados: new Set(), padraoVitoria: false };
-                
-                if (estado.modo === 'rapido') {
-                    const numeros = gerarNumerosAleatorios(1, 30, 9);
-                    cartela.numeros = [
-                        [numeros[0], numeros[1], numeros[2]],
-                        [numeros[3], numeros[4], numeros[5]],
-                        [numeros[6], numeros[7], numeros[8]]
-                    ];
-                    cartela.dimensao = 3;
-                } else {
-                    const b = gerarNumerosAleatorios(1, 15, 5);
-                    const i = gerarNumerosAleatorios(16, 30, 5);
-                    const n = gerarNumerosAleatorios(31, 45, 4);
-                    const g = gerarNumerosAleatorios(46, 60, 5);
-                    const o = gerarNumerosAleatorios(61, 75, 5);
-                    
-                    cartela.numeros = [
-                        [b[0], i[0], n[0], g[0], o[0]],
-                        [b[1], i[1], n[1], g[1], o[1]],
-                        [b[2], i[2], 'LIVRE', g[2], o[2]],
-                        [b[3], i[3], n[2], g[3], o[3]],
-                        [b[4], i[4], n[3], g[4], o[4]]
-                    ];
-                    cartela.marcados.add('LIVRE');
-                    cartela.dimensao = 5;
-                    estado.colunasBingo = { 0: 'B', 1: 'I', 2: 'N', 3: 'G', 4: 'O' };
-                }
-                return cartela;
-            }
-            
-            function gerarBots() {
-                const nomes = ['Ana', 'Beto', 'Carlos', 'Dora', 'Edu', 'Fia'];
-                estado.bots = [];
-                for (let i = 0; i < 3; i++) {
-                    const nome = nomes[Math.floor(Math.random() * nomes.length)];
-                    nomes.splice(nomes.indexOf(nome), 1);
-                    estado.bots.push({
-                        nome: nome,
-                        cartela: criarCartela(`bot-${i}`),
-                        numerosFaltando: 99
-                    });
-                }
-                estado.bots.forEach(calcularFaltamParaBot);
-            }
-            
-            function gerarPoolNumeros() {
-                estado.numerosDisponiveis = [];
-                for (let i = 1; i <= estado.limiteNumeros; i++) {
-                    estado.numerosDisponiveis.push(i);
-                }
-                for (let i = estado.numerosDisponiveis.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [estado.numerosDisponiveis[i], estado.numerosDisponiveis[j]] = [estado.numerosDisponiveis[j], estado.numerosDisponiveis[i]];
-                }
-            }
-            
-            // --- 3. LÓGICA DE RENDERIZAÇÃO (UI) ---
-
-            /**
-             * Função genérica para renderizar uma cartela (preview ou principal)
-             */
-            function renderizarCartela(cartela, isPreview = false) {
-                const container = document.createElement('div');
-                const gridColsClass = estado.modo === 'rapido' ? 'grid-cols-3' : 'grid-cols-5';
-                
-                container.className = isPreview ? 'cartela-base cartela-preview' : 'cartela-base';
-                container.id = cartela.id;
-
-                let htmlCartela = '';
-                
-                if (estado.modo === 'classico') {
-                    htmlCartela += `<div class="grid ${gridColsClass} gap-1 mb-2">
-                        ${Object.values(estado.colunasBingo).map(letra => 
-                            `<div class="cartela-header text-center ${isPreview ? 'text-2xl' : ''}">${letra}</div>`
-                        ).join('')}
-                    </div>`;
-                }
-                
-                htmlCartela += `<div class="grid ${gridColsClass} gap-1 md:gap-2">`;
-                
-                for (let i = 0; i < cartela.dimensao; i++) {
-                    for (let j = 0; j < cartela.dimensao; j++) {
-                        const num = cartela.numeros[i][j];
-                        let classes = 'cartela-celula';
-                        if (num === 'LIVRE') classes += ' livre';
-                        
-                        htmlCartela += `
-                            <div id="celula-${cartela.id}-${num}" class="${classes}">
-                                ${num === 'LIVRE' ? 'Schola<br>Mente' : num}
-                            </div>
-                        `;
-                    }
-                }
-                htmlCartela += `</div>`;
-                container.innerHTML = htmlCartela;
-                
-                // Adiciona listeners de clique manual (NOVO) - Apenas na cartela principal
-                if (!isPreview) {
-                    for (let i = 0; i < cartela.dimensao; i++) {
-                        for (let j = 0; j < cartela.dimensao; j++) {
-                            const num = cartela.numeros[i][j];
-                            if (num !== 'LIVRE') {
-                                const celulaEl = container.querySelector(`#celula-${cartela.id}-${num}`);
-                                celulaEl.addEventListener('click', () => cliqueCelula(cartela, num, celulaEl));
-                            }
-                        }
-                    }
-                }
-                
-                return container;
-            }
-
-            /* * REMOVIDA: function renderizarGradeSorteio()
-             * A função inteira foi removida.
-             */
-
-            function renderizarPainelBots() {
-                listaBotsEl.innerHTML = '';
-                
-                // NOVO: Destacar o Jogador (Aluno)
-                if (estado.jogoEmAndamento && estado.cartelasJogador.length > 0) {
-                    const cartelaJogador = estado.cartelasJogador[0];
-                    const faltamJogador = calcularFaltam(cartelaJogador); // Usa a nova função genérica
-                    
-                    let statusTexto = `Faltam ${faltamJogador}`;
-                    let statusClass = 'status text-blue-600 font-semibold'; // Cor padrão do jogador
-                    
-                    if (faltamJogador === 1) {
-                        statusTexto = 'FALTA SÓ 1!';
-                        statusClass = 'status falta-1 font-bold';
-                    } else if (faltamJogador === 0) {
-                        statusTexto = 'BINGO!';
-                        statusClass = 'status text-green-600 font-bold';
-                    }
-                    
-                    listaBotsEl.innerHTML += `
-                        <div class="bot-status flex justify-between items-center bg-blue-100 p-2 rounded-md border-2 border-blue-500 shadow-sm">
-                            <span class="nome font-extrabold text-blue-700">${estado.nomeJogador} (Você!)</span>
-                            <span class="${statusClass}">${statusTexto}</span>
-                        </div>
-                    `;
-                }
-
-                // Renderiza os bots
-                estado.bots.sort((a, b) => a.numerosFaltando - b.numerosFaltando);
-                
-                estado.bots.forEach(bot => {
-                    let statusClass = 'status';
-                    let statusTexto = `Faltam ${bot.numerosFaltando}`;
-                    
-                    if (bot.numerosFaltando === 1) statusClass += ' falta-1 font-bold';
-                    else if (bot.numerosFaltando === 0) statusClass = 'text-green-600 font-bold';
-                    
-                    if (bot.numerosFaltando === 1) statusTexto = 'FALTA SÓ 1!';
-                    else if (bot.numerosFaltando === 0) statusTexto = 'BINGO!';
-                    
-                    listaBotsEl.innerHTML += `
-                        <div class="bot-status flex justify-between items-center">
-                            <span class="nome">${bot.nome}</span>
-                            <span class="${statusClass}">${statusTexto}</span>
-                        </div>
-                    `;
+            if(type === 'click') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now+0.1);
+            } else if(type === 'draw') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(500, now);
+                osc.frequency.linearRampToValueAtTime(1000, now+0.1);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.5);
+                osc.start(); osc.stop(now+0.5);
+            } else if(type === 'win') {
+                [523, 659, 783, 1046].forEach(function(f, i) {
+                    var o = audioCtx.createOscillator(); var g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.type = 'square'; o.frequency.value = f;
+                    g.gain.setValueAtTime(0.05, now + i*0.1); g.gain.linearRampToValueAtTime(0, now + i*0.1 + 0.4);
+                    o.start(now + i*0.1); o.stop(now + i*0.1 + 0.4);
                 });
+            } else if(type === 'lose') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now+0.5);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now+0.5);
+                osc.start(); osc.stop(now+0.5);
+            } else if(type === 'alert') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(300, now);
+                gain.gain.setValueAtTime(0.1, now); 
+                osc.frequency.linearRampToValueAtTime(200, now+0.3);
+                osc.start(); osc.stop(now+0.3);
             }
+        }
+
+        function speak(text) {
+            if(S.mute || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            var u = new SpeechSynthesisUtterance(text);
+            u.lang = 'pt-BR'; u.rate = 1.0;
+            window.speechSynthesis.speak(u);
+        }
+
+        // --- INIT ---
+        window.onload = function() {
+            var sn = localStorage.getItem('bingo_nm');
+            var sb = localStorage.getItem('bingo_bl');
+            if(sb) S.bal = parseInt(sb);
+            if(sn) { S.name = sn; $('inp-name').value = sn; }
+            updUi();
+        };
+
+        function updUi() {
+            $('ui-bal').innerText = S.bal;
+            localStorage.setItem('bingo_bl', S.bal);
+        }
+
+        function switchScr(id) {
+            document.querySelectorAll('section').forEach(function(el) {
+                el.classList.add('hidden'); el.classList.remove('flex');
+            });
+            $(id).classList.remove('hidden'); $(id).classList.add('flex');
+        }
+
+        // --- CONFIG ---
+        function goConfig() {
+            resumeAudio();
+            var n = $('inp-name').value.trim();
+            if(!n) return alert('Por favor, digite seu nome.');
+            S.name = n; localStorage.setItem('bingo_nm', n);
+            switchScr('screen-config');
+            playSound('click');
+            setCards(1); setBet(10); setBots(3);
+        }
+
+        function setCards(n) {
+            S.cfg.cards = n;
+            $('btn-c1').classList.toggle('active', n===1);
+            $('btn-c2').classList.toggle('active', n===2);
+            playSound('click');
+        }
+
+        function setBots(n) {
+            S.cfg.botCount = n;
+            [1,3,7,10].forEach(k => {
+                var el = $('btn-b'+k);
+                if(el) el.classList.toggle('active', k===n);
+            });
+            playSound('click');
+        }
+
+        function setBet(n) {
+            if(n > S.bal) { playSound('lose'); return alert('Saldo insuficiente!'); }
+            S.cfg.bet = n; updatePot(); playSound('click');
+        }
+        function updatePot() {
+            var m = $('sel-rule').value === 'full' ? 5 : 2;
+            $('ui-pot').innerText = S.cfg.bet * m;
+        }
+
+        function toggleMute() {
+            S.mute = !S.mute;
+            $('icon-sound').className = S.mute ? 'fas fa-volume-mute text-red-500 text-xs' : 'fas fa-volume-up text-xs';
+            if(S.mute) window.speechSynthesis.cancel();
+        }
+
+        // --- GAME LOGIC ---
+        function startGame() {
+            resumeAudio();
+            if(S.bal < S.cfg.bet) return alert('Sem saldo.');
+            S.bal -= S.cfg.bet; updUi();
             
-            function atualizarGlobo(numero) {
-                const letra = estado.modo === 'classico' ? obterLetraBingo(numero) : '';
-                globoEl.innerHTML = `
-                    <div class="text-2xl -mt-4">${letra}</div>
-                    <div class="text-7xl -ml-2">${numero}</div>
-                `;
+            S.game = { active: true, pause: true, drawn: [], timer: null, cards: [], marks: [], bots: [] };
+            
+            // Setup UI
+            $('ball-history').innerHTML = ''; 
+            
+            // Add Emoji to Player Name
+            $('game-pname').innerText = "😎 " + S.name;
+            
+            $('game-bal').innerText = S.bal;
+            var m = $('sel-rule').value === 'full' ? 5 : 2;
+            $('game-pot').innerText = (S.cfg.bet * m);
+            
+            // Rule Headline
+            var ruleText = $('sel-rule').value === 'full' ? "COMPLETAR A CARTELA" : "FAZER UMA LINHA";
+            $('game-rule-text').innerText = "NESTA RODADA GANHA QUEM: " + ruleText;
+
+            var btn = $('btn-play');
+            btn.innerHTML = '<i class="fas fa-play"></i> <span>COMEÇAR</span>';
+            btn.className = "flex-grow h-10 rounded-lg btn-action text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide";
+            
+            $('game-msg').innerText = "Divirta-se e exercite a mente!";
+            $('game-msg').className = "text-blue-100 text-[10px] uppercase tracking-widest font-bold";
+
+            // Setup Bots
+            var needed = $('sel-rule').value === 'full' ? 24 : 5;
+            var shuffled = botNames.sort(() => 0.5 - Math.random());
+            for(var i=0; i<S.cfg.botCount; i++) {
+                var bName = shuffled[i] || ("🤖 Bot " + (i+1));
+                S.game.bots.push({ name: bName, needed: needed });
             }
+            updateRivalsUI();
 
-            // --- 4. LÓGICA DO JOGO (NOVO FLUXO) ---
+            genCards();
+            renderCards();
+            switchScr('screen-game');
+            playSound('click');
+        }
 
-            /**
-             * NOVO: Mostra a tela de escolha de cartelas
-             */
-            function mostrarTelaDeEscolha() {
-                // 1. Ler configurações
-                estado.nomeJogador = nomeJogadorEl.value || 'Jogador(a)';
-                estado.modo = modoJogoEl.value;
-                estado.limiteNumeros = estado.modo === 'rapido' ? 30 : 75;
+        function updateRivalsUI() {
+            var html = "";
+            var alertMsg = "";
+            
+            S.game.bots.forEach(b => {
+                var styleClass = "";
+                if (b.needed === 3) styleClass = "warn-3";
+                if (b.needed === 2) styleClass = "warn-2";
+                if (b.needed === 1) styleClass = "warn-1";
+
+                html += `<div class="rival-pill ${styleClass}">
+                    <span class="text-white font-bold">${b.name}</span>
+                    <span class="text-blue-200 text-[9px] ml-1">falta ${b.needed}</span>
+                </div>`;
                 
-                // NOVO: Selecionar o prêmio da rodada
-                estado.premioAtual = premiosSimbólicos[Math.floor(Math.random() * premiosSimbólicos.length)];
-                
-                // 2. Mudar UI
-                painelConfiguracoes.style.display = 'none';
-                telaEscolha.style.display = 'block';
-                tituloEscolha.textContent = `Olá, ${estado.nomeJogador}! Escolha sua cartela:`;
-                
-                // 3. Gerar e renderizar 3 cartelas de preview
-                containerPreviews.innerHTML = '';
-                for (let i = 0; i < 3; i++) {
-                    const cartelaPreview = criarCartela(`preview-${i}`);
-                    const cartelaEl = renderizarCartela(cartelaPreview, true);
-                    cartelaEl.addEventListener('click', () => selecionarCartela(cartelaPreview));
-                    containerPreviews.appendChild(cartelaEl);
+                // Priority Alerts
+                if(b.needed === 1) alertMsg = "⚠️ " + b.name + " ESTÁ POR UMA!";
+                else if(!alertMsg && b.needed === 2) alertMsg = "Atenção: " + b.name + " está por duas!";
+            });
+            $('rivals-bar').innerHTML = html;
+            
+            // Update Main Alert Message if critical
+            if(alertMsg) {
+                $('game-msg').innerText = alertMsg;
+                $('game-msg').className = "text-yellow-300 text-xs uppercase tracking-widest font-bold alert-text";
+                if(alertMsg.includes("POR UMA")) playSound('alert');
+            }
+        }
+
+        function genCards() {
+            var ranges = [[1,15],[16,30],[31,45],[46,60],[61,75]];
+            for(var c=0; c<S.cfg.cards; c++){
+                var flat = new Array(25).fill(0);
+                for(var col=0; col<5; col++){
+                    var nums = [];
+                    while(nums.length<5){
+                        var r = Math.floor(Math.random()*(ranges[col][1]-ranges[col][0]+1))+ranges[col][0];
+                        if(!nums.includes(r)) nums.push(r);
+                    }
+                    for(var row=0; row<5; row++) flat[row*5+col] = nums[row];
                 }
+                flat[12] = 0; // Free
+                S.game.cards.push(flat);
+                var m = new Array(25).fill(false); m[12] = true;
+                S.game.marks.push(m);
             }
+        }
 
-            /**
-             * NOVO: Chamado quando o jogador clica em uma cartela
-             */
-            function selecionarCartela(cartelaEscolhida) {
-                // 1. Definir cartela principal do jogador
-                cartelaEscolhida.id = 'jogador-1'; // Renomeia ID
-                estado.cartelasJogador = [cartelaEscolhida];
-                
-                // 2. Mudar UI
-                telaEscolha.style.display = 'none';
-                areaJogo.style.display = 'flex';
-                btnResetar.style.display = 'block';
+        function renderCards() {
+            var area = $('game-area'); area.innerHTML = '';
+            var wrap = document.createElement('div');
+            wrap.className = "cards-wrapper";
 
-                // NOVO: Mostrar título da rodada
-                const numerosParaGanhar = estado.modo === 'rapido' ? 3 : 5;
-                tituloRodadaEl.textContent = `Rodada Valendo: ${estado.premioAtual.nome} | ${numerosParaGanhar} Números para Ganhar!`;
-                tituloRodadaEl.style.display = 'block';
+            S.game.cards.forEach(function(card, cIdx) {
+                var div = document.createElement('div');
+                div.className = "bingo-card";
                 
-                // 3. Iniciar o jogo de fato
-                iniciarJogoDeFato();
-            }
-
-            /**
-             * Inicia o jogo: prepara dados e começa o sorteio
-             */
-            function iniciarJogoDeFato() {
-                estado.jogoEmAndamento = true;
-                estado.numerosSorteados.clear();
-                globoEl.innerHTML = '...';
-
-                // 1. Gerar dados (bots, pool)
-                gerarPoolNumeros();
-                gerarBots();
-                
-                // 2. Renderizar UI do Jogo
-                // REMOVIDO: renderizarGradeSorteio();
-                renderizarPainelBots();
-                
-                // 3. Renderizar a cartela principal (escolhida)
-                containerCartelasEl.innerHTML = '';
-                const cartelaEl = renderizarCartela(estado.cartelasJogador[0], false);
-                containerCartelasEl.appendChild(cartelaEl);
-                
-                // 4. Iniciar o sorteio
-                const intervalo = estado.modo === 'rapido' ? 2500 : 4500; // Um pouco mais lento para dar tempo de marcar
-                estado.intervaloSorteio = setInterval(sortearNumero, intervalo);
-            }
-
-            function resetarJogo() {
-                clearInterval(estado.intervaloSorteio);
-                estado.jogoEmAndamento = false;
-                
-                areaJogo.style.display = 'none';
-                telaEscolha.style.display = 'none';
-                painelConfiguracoes.style.display = 'flex';
-                btnResetar.style.display = 'none';
-                modalFimJogo.style.display = 'none';
-                
-                // NOVO: Esconder título da rodada e limpar ordem do sorteio
-                tituloRodadaEl.style.display = 'none';
-                ordemSorteioContainer.innerHTML = '';
-                
-                btnIniciar.disabled = false;
-                
-                containerCartelasEl.innerHTML = '';
-                
-                // REMOVIDO:
-                // gradeSorteioEl.innerHTML = ''; 
-                
-                listaBotsEl.innerHTML = '';
-                globoEl.innerHTML = '--';
-            }
-
-            /**
-             * NOVO: Função para falar o número
-             */
-            function falarNumero(numero) {
-                let textoParaFalar = `${numero}`;
-                
-                if (estado.modo === 'classico') {
-                    const letra = obterLetraBingo(numero);
-                    textoParaFalar = `Na coluna ${letra}... número ${numero}`;
-                }
-
-                // Cancela falas anteriores para não embolar
-                synthVoz.cancel(); 
-                
-                const utterance = new SpeechSynthesisUtterance(textoParaFalar);
-                if (voz) {
-                    utterance.voice = voz; // Usa a voz pt-BR se encontrada
-                }
-                utterance.lang = 'pt-BR';
-                utterance.rate = 0.9; // Um pouco mais devagar
-                synthVoz.speak(utterance);
-            }
-
-            /**
-             * Sorteia um número do pool e atualiza o jogo.
-             */
-            function sortearNumero() {
-                if (estado.numerosDisponiveis.length === 0) {
-                    finalizarJogo(null, "Empate! Todos os números foram sorteados.");
-                    return;
-                }
-
-                const numeroSorteado = estado.numerosDisponiveis.pop();
-                estado.numerosSorteados.add(numeroSorteado);
-
-                // 1. Tocar som e Falar
-                sons.sorteio.triggerAttackRelease("C4", "8n", Tone.now());
-                falarNumero(numeroSorteado);
-
-                // 2. Atualizar UI
-                atualizarGlobo(numeroSorteado);
-                
-                // REMOVIDO:
-                // document.getElementById(`num-grid-${numeroSorteado}`).classList.add('sorteado');
-                
-                // NOVO: Adicionar à lista de ordem de sorteio
-                const letra = estado.modo === 'classico' ? obterLetraBingo(numeroSorteado) : '';
-                const numeroEl = document.createElement('span');
-                numeroEl.className = 'py-1 px-2 bg-gray-200 rounded text-gray-700 font-bold text-sm';
-                numeroEl.textContent = `${letra}${numeroSorteado}`;
-                ordemSorteioContainer.appendChild(numeroEl);
-                ordemSorteioContainer.scrollTop = ordemSorteioContainer.scrollHeight; // Auto-scroll
-                
-                // 3. Marcar para os BOTS (NÃO para o jogador)
-                estado.bots.forEach(bot => {
-                    marcarNumeroParaBot(bot.cartela, numeroSorteado);
+                ['B','I','N','G','O'].forEach(function(l) {
+                    var h = document.createElement('div');
+                    h.className = "header-cell"; h.innerText = l;
+                    div.appendChild(h);
                 });
 
-                // 4. Verificar Vencedores (agora só verifica bots, jogador vence no clique)
-                verificarVencedoresBots();
-            }
-
-            /**
-             * NOVO: Evento de clique na célula da cartela do jogador
-             */
-            function cliqueCelula(cartela, numero, elemento) {
-                if (!estado.jogoEmAndamento) return; // Jogo não começou
-
-                // 1. Já está marcado? Não faz nada.
-                if (cartela.marcados.has(numero)) return;
-                
-                // 2. Acertou? (O número já foi sorteado)
-                if (estado.numerosSorteados.has(numero)) {
-                    cartela.marcados.add(numero);
-                    elemento.classList.add('marcado');
-                    sons.marcar.triggerAttackRelease("C5", "8n", Tone.now());
+                card.forEach(function(n, i) {
+                    var cell = document.createElement('div');
+                    cell.className = "num-cell"; cell.id = `c${cIdx}-${i}`;
                     
-                    renderizarPainelBots(); // NOVO: Atualiza a contagem do jogador
-                    
-                    // Verificar se o jogador ganhou
-                    if (verificarPadraoVitoria(cartela)) {
-                        finalizarJogo("JOGADOR");
+                    if(n === 0) {
+                        cell.classList.add('marked', 'free');
+                        cell.innerHTML = '<i class="fas fa-star text-yellow-600"></i>';
+                    } else {
+                        cell.innerText = n;
+                        cell.onclick = function() { hit(cIdx, i, n); };
                     }
-                } 
-                // 3. Errou? (Clicou em número não sorteado)
-                else {
-                    sons.erro.triggerAttackRelease("A2", "16n", Tone.now());
-                    elemento.classList.add('shake');
-                    setTimeout(() => elemento.classList.remove('shake'), 300);
-                }
-            }
-
-            /**
-             * Marca número apenas para o bot (lógica interna)
-             */
-            function marcarNumeroParaBot(cartela, numero) {
-                for (let i = 0; i < cartela.dimensao; i++) {
-                    for (let j = 0; j < cartela.dimensao; j++) {
-                        if (cartela.numeros[i][j] === numero) {
-                            cartela.marcados.add(numero);
-                            return;
-                        }
-                    }
-                }
-            }
-
-            /**
-             * NOVO: Verifica apenas os bots (chamado após sorteio)
-             */
-            function verificarVencedoresBots() {
-                if (!estado.jogoEmAndamento) return;
-
-                for (const bot of estado.bots) {
-                    if (verificarPadraoVitoria(bot.cartela)) {
-                        finalizarJogo(bot); // Bot venceu
-                        return;
-                    }
-                    calcularFaltamParaBot(bot); // Atualiza contagem
-                }
-                renderizarPainelBots(); // Atualiza UI dos bots
-            }
-            
-            function verificarPadraoVitoria(cartela) {
-                const N = cartela.dimensao;
-                
-                // Linhas
-                for (let i = 0; i < N; i++) {
-                    let linhaCompleta = true;
-                    for (let j = 0; j < N; j++) {
-                        if (!cartela.marcados.has(cartela.numeros[i][j])) {
-                            linhaCompleta = false; break;
-                        }
-                    }
-                    if (linhaCompleta) return true;
-                }
-                
-                // Colunas
-                for (let j = 0; j < N; j++) {
-                    let colunaCompleta = true;
-                    for (let i = 0; i < N; i++) {
-                        if (!cartela.marcados.has(cartela.numeros[i][j])) {
-                            colunaCompleta = false; break;
-                        }
-                    }
-                    if (colunaCompleta) return true;
-                }
-                
-                // Diagonais
-                let diag1Completa = true;
-                let diag2Completa = true;
-                for (let i = 0; i < N; i++) {
-                    if (!cartela.marcados.has(cartela.numeros[i][i])) diag1Completa = false;
-                    if (!cartela.marcados.has(cartela.numeros[i][N - 1 - i])) diag2Completa = false;
-                }
-                if (diag1Completa || diag2Completa) return true;
-
-                return false;
-            }
-
-            /**
-             * NOVO: Função genérica para calcular quantos faltam
-             */
-            function calcularFaltam(cartela) {
-                const N = cartela.dimensao;
-                let minFaltando = N + 1;
-
-                const padroes = [];
-                // Linhas
-                for (let i = 0; i < N; i++) padroes.push(cartela.numeros[i]);
-                // Colunas
-                for (let j = 0; j < N; j++) {
-                    const coluna = [];
-                    for (let i = 0; i < N; i++) coluna.push(cartela.numeros[i][j]);
-                    padroes.push(coluna);
-                }
-                // Diagonais
-                const diag1 = [], diag2 = [];
-                for (let i = 0; i < N; i++) {
-                    diag1.push(cartela.numeros[i][i]);
-                    diag2.push(cartela.numeros[i][N - 1 - i]);
-                }
-                padroes.push(diag1); padroes.push(diag2);
-                
-                for (const padrao of padroes) {
-                    let faltam = 0;
-                    for (const num of padrao) {
-                        if (!cartela.marcados.has(num)) faltam++;
-                    }
-                    if (faltam < minFaltando) minFaltando = faltam;
-                }
-                return minFaltando;
-            }
-
-            /**
-             * Função antiga, agora usa a nova genérica
-             */
-            function calcularFaltamParaBot(bot) {
-                bot.numerosFaltando = calcularFaltam(bot.cartela);
-            }
-
-            function finalizarJogo(vencedor, mensagemEmpate = null) {
-                clearInterval(estado.intervaloSorteio);
-                estado.jogoEmAndamento = false;
-                btnIniciar.disabled = true;
-                synthVoz.cancel(); // Para a voz
-                
-                const imgPremioEl = document.getElementById('modal-imagem-premio');
-
-                if (mensagemEmpate) {
-                    modalTitulo.textContent = 'FIM DE JOGO';
-                    modalTitulo.className = 'text-gray-700';
-                    modalMensagem.textContent = mensagemEmpate;
-                    imgPremioEl.style.display = 'none'; // Esconde imagem
-                } else if (vencedor === "JOGADOR") {
-                    // JOGADOR VENCEU (PRÊMIO COM IMAGEM)
-                    const premio = estado.premioAtual; // NOVO: Usar o prêmio já definido
-                    
-                    modalTitulo.textContent = 'BINGO!';
-                    modalTitulo.className = 'text-orange-600';
-                    modalMensagem.textContent = `PARABÉNS, ${estado.nomeJogador}! Você venceu e ganhou: ${premio.nome}!`;
-                    
-                    // Mostra a imagem do prêmio
-                    imgPremioEl.src = premio.imagemUrl;
-                    imgPremioEl.alt = `Imagem de ${premio.nome}`;
-                    imgPremioEl.style.display = 'block';
-                    
-                    sons.vitoria.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '1n', Tone.now());
-                    iniciarConfete();
-                    
-                } else {
-                    // BOT VENCEU
-                    modalTitulo.textContent = 'BINGO!';
-                    modalTitulo.className = 'text-red-600';
-                    modalMensagem.textContent = `Ah... O jogador '${vencedor.nome}' venceu esta rodada! Mais sorte na próxima!`;
-                    imgPremioEl.style.display = 'none'; // Esconde imagem
-                    
-                    sons.vitoria.triggerAttackRelease(['C4', 'D#4', 'G4'], '1n', Tone.now());
-                }
-                
-                modalFimJogo.style.display = 'flex';
-            }
-
-            // --- 5. UTILITÁRIOS E EFEITOS ---
-
-            function obterLetraBingo(numero) {
-                if (numero <= 15) return 'B';
-                if (numero <= 30) return 'I';
-                if (numero <= 45) return 'N';
-                if (numero <= 60) return 'G';
-                if (numero <= 75) return 'O';
-                return '';
-            }
-            
-            function iniciarConfete() {
-                confettiContainer.innerHTML = '';
-                confettiContainer.style.display = 'block';
-                const cores = ['#f97316', '#1d4ed8', '#16a34a', '#ec4899', '#fde047'];
-
-                for (let i = 0; i < 100; i++) {
-                    const confetto = document.createElement('div');
-                    confetto.className = 'confetto';
-                    confetto.style.left = `${Math.random() * 100}vw`;
-                    confetto.style.backgroundColor = cores[Math.floor(Math.random() * cores.length)];
-                    confetto.style.animationDelay = `${Math.random() * 3}s`;
-                    confetto.style.transform = `rotate(${Math.random() * 360}deg)`;
-                    confetto.style.height = `${Math.random() * 15 + 10}px`;
-                    confetto.style.width = `${Math.random() * 8 + 5}px`;
-                    confettiContainer.appendChild(confetto);
-                }
-                
-                setTimeout(() => {
-                    confettiContainer.style.display = 'none';
-                    confettiContainer.innerHTML = '';
-                }, 5000);
-            }
-
-            // --- 6. EVENT LISTENERS ---
-
-            btnIniciar.addEventListener('click', () => {
-                // Inicia os sons no contexto de um clique do usuário (necessário para navegadores)
-                Tone.start();
-                // Carrega vozes caso ainda não tenham carregado
-                if (!voz) carregarVozes();
-                
-                mostrarTelaDeEscolha();
+                    div.appendChild(cell);
+                });
+                wrap.appendChild(div);
             });
-            
-            btnResetar.addEventListener('click', resetarJogo);
-            
-            btnFecharModal.addEventListener('click', () => {
-                modalFimJogo.style.display = 'none';
-                if (confettiContainer.style.display === 'block') {
-                    confettiContainer.style.display = 'none';
-                }
-            });
+            area.appendChild(wrap);
+        }
 
-        });
+        // --- GAMEPLAY ---
+        function togglePlay() {
+            if(S.game.pause) {
+                S.game.pause = false;
+                var btn = $('btn-play');
+                btn.innerHTML = '<i class="fas fa-pause"></i> <span>PAUSAR</span>';
+                btn.className = "flex-grow h-10 rounded-lg btn-yellow text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide";
+                
+                if(S.game.drawn.length === 0) draw();
+                S.game.timer = setInterval(draw, S.cfg.spd);
+            } else { 
+                stop(); 
+                var btn = $('btn-play');
+                btn.innerHTML = '<i class="fas fa-play"></i> <span>CONTINUAR</span>';
+                btn.className = "flex-grow h-10 rounded-lg btn-action text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide";
+            }
+        }
+
+        function stop() {
+            S.game.pause = true; clearInterval(S.game.timer);
+        }
+
+        function draw() {
+            if(!S.game.active || (S.game.pause && S.game.timer)) return;
+            if(S.game.drawn.length >= 75) { stop(); alert("Fim das pedras!"); return; }
+
+            // Motivational Phrase
+            if(Math.random() < 0.2 && !$('game-msg').innerText.includes("⚠️")) {
+                $('game-msg').innerText = phrases[Math.floor(Math.random()*phrases.length)];
+                $('game-msg').className = "text-blue-100 text-[10px] uppercase tracking-widest font-bold";
+            }
+
+            setTimeout(function() {
+                if(!S.game.active) return;
+                var n; do { n = Math.floor(Math.random()*75)+1; } while(S.game.drawn.includes(n));
+                S.game.drawn.push(n);
+
+                // Update History
+                var hist = $('ball-history');
+                if(S.game.drawn.length === 1) hist.innerHTML = '';
+                var prev = hist.querySelector('.latest');
+                if(prev) prev.classList.remove('latest');
+
+                var ballEl = document.createElement('div');
+                ballEl.className = "ball-history-item latest";
+                ballEl.innerText = n;
+                ballEl.animate([{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 300 });
+
+                hist.prepend(ballEl);
+                
+                playSound('draw');
+                speak(n.toString());
+
+                // Bot Logic
+                S.game.bots.forEach(b => {
+                    if(b.needed > 0 && Math.random() < 0.22) { 
+                        b.needed--;
+                    }
+                });
+                updateRivalsUI();
+                
+                // Check Bot Win
+                var winnerBot = S.game.bots.find(b => b.needed === 0);
+                if(winnerBot) {
+                    doEnd(false, winnerBot.name);
+                }
+
+            }, 500);
+        }
+
+        function hit(cIdx, i, n) {
+            if(S.game.marks[cIdx][i]) return;
+            var el = $(`c${cIdx}-${i}`);
+            
+            if(S.game.drawn.includes(n)) {
+                S.game.marks[cIdx][i] = true;
+                el.classList.add('marked');
+                playSound('click');
+                checkWin(cIdx);
+            } else {
+                el.classList.add('shake');
+                setTimeout(() => el.classList.remove('shake'), 400);
+                playSound('lose');
+            }
+        }
+
+        function checkWin(cIdx) {
+            var m = S.game.marks[cIdx];
+            var r = $('sel-rule').value;
+            var w = false;
+            var _chk = function(arr) { return arr.every(function(x) { return m[x]; }); };
+
+            if(r === 'line') {
+                for(var k=0; k<5; k++) {
+                    if(_chk([k*5, k*5+1, k*5+2, k*5+3, k*5+4])) w=true; 
+                    if(_chk([k, k+5, k+10, k+15, k+20])) w=true;
+                }
+                if(_chk([0,6,12,18,24]) || _chk([4,8,12,16,20])) w=true;
+            } else {
+                if(m.every(function(x) { return x; })) w=true;
+            }
+
+            if(w) doEnd(true, S.name);
+        }
+
+        function doEnd(won, winnerName) {
+            stop(); S.game.active = false;
+            var border = $('modal-border');
+            var title = $('end-title');
+            var msg = $('end-msg');
+            var pbox = $('prize-box');
+            
+            if(won) {
+                var mult = $('sel-rule').value === 'full' ? 5 : 2;
+                var prize = S.cfg.bet * mult;
+                S.bal += prize; updUi();
+                
+                border.className = "bg-blue-900/90 border-4 border-yellow-500 rounded-3xl p-6 text-center max-w-xs w-full relative overflow-hidden shadow-2xl backdrop-blur-xl";
+                title.innerText = "BINGO!";
+                title.className = "text-5xl text-yellow-400 vegas-font mb-2";
+                msg.innerText = "Parabéns, " + S.name + "!";
+                pbox.style.display = "block";
+                $('win-amount').innerText = prize;
+                playSound('win');
+            } else {
+                border.className = "bg-red-900/90 border-4 border-red-500 rounded-3xl p-6 text-center max-w-xs w-full relative overflow-hidden shadow-2xl backdrop-blur-xl";
+                title.innerText = "DERROTA";
+                title.className = "text-4xl text-red-500 vegas-font mb-2";
+                msg.innerText = winnerName + " bateu o Bingo!";
+                pbox.style.display = "none";
+                playSound('lose');
+            }
+            
+            $('modal-end').classList.remove('hidden');
+        }
+
+        function closeEnd() {
+            $('modal-end').classList.add('hidden');
+            switchScr('screen-config');
+        }
+
+        function quit() {
+            if(confirm('Deseja realmente sair?')) {
+                stop(); window.speechSynthesis.cancel();
+                switchScr('screen-config');
+            }
+        }
     </script>
 </body>
 </html>
-
-
-
