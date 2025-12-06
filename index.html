@@ -29,13 +29,12 @@
             font-family: 'Roboto', sans-serif;
             background-color: var(--royal-dark);
             color: white;
-            /* Altura dinâmica para mobile */
             height: 100dvh; 
             width: 100vw;
             overflow: hidden; 
             touch-action: manipulation;
             background-image: radial-gradient(circle at 50% 30%, #172554 0%, #020617 100%);
-            -webkit-user-select: none; /* Previne seleção de texto no iOS */
+            -webkit-user-select: none;
             user-select: none;
         }
 
@@ -57,11 +56,11 @@
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             grid-template-rows: auto repeat(5, 1fr);
-            gap: 0.6vmin; /* Gap menor para sobrar mais espaço para números */
+            gap: 0.6vmin; 
             
             width: 100%;
             height: auto;
-            max-width: 98%; /* Aproveita quase toda a largura */
+            max-width: 98%; 
             max-height: 98%;
             aspect-ratio: 5 / 6.2;
             
@@ -86,7 +85,6 @@
         @media (orientation: portrait) {
             .cards-container-2 { flex-direction: column; }
             .cards-container-2 .bingo-card { max-height: 48%; width: 95%; }
-            /* Ajuste fino para iPhone: cartela única bem larga */
             .bingo-card { width: 96vw; max-width: 500px; }
         }
 
@@ -110,7 +108,6 @@
             background: #f8fafc;
             color: #0f172a;
             font-weight: 900;
-            /* Fonte aumentada para legibilidade idosa */
             font-size: clamp(1.8rem, 6.5vmin, 4.5rem); 
             display: flex;
             align-items: center;
@@ -125,7 +122,7 @@
         .num-cell.marked {
             background: radial-gradient(circle at 30% 30%, #facc15 0%, #ca8a04 85%);
             color: #422006;
-            border: 3px solid #fef08a; /* Borda mais grossa */
+            border: 3px solid #fef08a;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             transform: scale(0.98);
         }
@@ -133,11 +130,10 @@
         .num-cell.free { background: #cbd5e1; color: #64748b; }
         .num-cell.free.marked { background: radial-gradient(circle, #facc15, #ca8a04); }
 
-        /* Animação de erro */
         .num-cell.shake { animation: shake 0.4s; background-color: #fca5a5; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
 
-        /* POPUP DE ANSIEDADE (FALTA 1 ou 2) */
+        /* POPUP DE ANSIEDADE */
         .anxiety-popup {
             position: absolute;
             top: 50%; left: 50%;
@@ -149,7 +145,7 @@
             z-index: 100;
             text-align: center;
             box-shadow: 0 0 50px rgba(239, 68, 68, 0.8);
-            pointer-events: none; /* Não bloqueia cliques */
+            pointer-events: none;
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -199,14 +195,11 @@
             color: white;
         }
 
-        /* CONFIG BTN */
         .btn-select { background: rgba(255,255,255,0.1); border: 2px solid transparent; color: #cbd5e1; }
         .btn-select.active { background: rgba(0,0,0,0.3); border-color: #facc15; color: white; }
 
         .modal-bg { background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* ALERTA */
         .alert-text { animation: flash 0.6s infinite alternate; color: #fef08a; }
         @keyframes flash { from { opacity: 1; } to { opacity: 0.6; } }
     </style>
@@ -378,18 +371,16 @@
         var $ = function(id) { return document.getElementById(id); };
         
         // --- AUDIO ENGINE OTIMIZADA ---
-        // Cria buffers uma única vez para não travar o celular
         var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         var shakerBuffer = null;
 
         function initAudio() {
             if(!shakerBuffer) {
                 var rate = audioCtx.sampleRate;
-                var len = rate * 1.5; // 1.5s de som
+                var len = rate * 1.0; // Reduzido para 1s para ser mais leve
                 shakerBuffer = audioCtx.createBuffer(1, len, rate);
                 var data = shakerBuffer.getChannelData(0);
                 for(var i=0; i < len; i++) {
-                    // Ruído branco simples
                     data[i] = Math.random() * 2 - 1;
                 }
             }
@@ -402,6 +393,7 @@
             resumeAudio();
             var now = audioCtx.currentTime;
             
+            // Garbage Collection Manual: Desconectar após uso
             var gain = audioCtx.createGain();
             gain.connect(audioCtx.destination);
 
@@ -409,22 +401,19 @@
                 if(!shakerBuffer) initAudio();
                 var src = audioCtx.createBufferSource();
                 src.buffer = shakerBuffer;
-                
-                // Filtro para som de "chocalho" (Highpass)
                 var filter = audioCtx.createBiquadFilter();
-                filter.type = 'highpass';
-                filter.frequency.value = 800;
+                filter.type = 'highpass'; filter.frequency.value = 800;
                 
-                src.connect(filter);
-                filter.connect(gain);
+                src.connect(filter); filter.connect(gain);
                 
-                // Envelope de volume
                 gain.gain.setValueAtTime(0, now);
                 gain.gain.linearRampToValueAtTime(0.2, now + 0.1);
                 gain.gain.linearRampToValueAtTime(0, now + 0.5);
                 
-                src.start(now);
-                src.stop(now + 0.6);
+                src.start(now); src.stop(now + 0.6);
+                
+                // Limpeza
+                setTimeout(function(){ src.disconnect(); gain.disconnect(); }, 1000);
             }
             else if(type === 'draw') {
                 var osc = audioCtx.createOscillator();
@@ -435,6 +424,7 @@
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
                 osc.start(now); osc.stop(now + 0.5);
+                setTimeout(function(){ osc.disconnect(); gain.disconnect(); }, 1000);
             }
             else if(type === 'click') {
                 var osc = audioCtx.createOscillator();
@@ -442,6 +432,7 @@
                 osc.frequency.setValueAtTime(800, now);
                 gain.gain.setValueAtTime(0.1, now);
                 osc.start(now); osc.stop(now + 0.1);
+                setTimeout(function(){ osc.disconnect(); gain.disconnect(); }, 500);
             }
             else if(type === 'alert') {
                 var osc = audioCtx.createOscillator();
@@ -450,9 +441,9 @@
                 osc.frequency.setValueAtTime(400, now);
                 gain.gain.setValueAtTime(0.1, now);
                 osc.start(now); osc.stop(now + 0.3);
+                setTimeout(function(){ osc.disconnect(); gain.disconnect(); }, 1000);
             }
             else if(type === 'win') {
-                // Acorde simples
                 [523, 659, 783, 1046].forEach(function(f, i) {
                     var o = audioCtx.createOscillator(); 
                     var g = audioCtx.createGain();
@@ -461,15 +452,16 @@
                     g.gain.setValueAtTime(0.1, now + i*0.1);
                     g.gain.linearRampToValueAtTime(0, now + i*0.1 + 0.5);
                     o.start(now + i*0.1); o.stop(now + i*0.1 + 0.5);
+                    setTimeout(function(){ o.disconnect(); g.disconnect(); }, 2000);
                 });
             }
         }
 
         function speak(text) {
             if(S.mute || !('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel(); // Sempre cancela anterior para não encavalar
             var u = new SpeechSynthesisUtterance(text);
-            u.lang = 'pt-BR'; u.rate = 1.1; // Um pouco mais rápido
+            u.lang = 'pt-BR'; u.rate = 1.1; 
             window.speechSynthesis.speak(u);
         }
 
@@ -489,7 +481,7 @@
 
         // --- CORE ---
         window.onload = function() {
-            initAudio(); // Prepara audio buffer
+            initAudio(); 
             var sn = localStorage.getItem('bingo_nm');
             var sb = localStorage.getItem('bingo_bl');
             if(sb) S.bal = parseInt(sb);
@@ -661,6 +653,8 @@
             area.appendChild(wrap);
         }
 
+        // --- SISTEMA DE SORTEIO OTIMIZADO (RECURSIVO) ---
+        // Evita travamentos por stack overflow de setInterval
         function togglePlay() {
             if(S.game.pause) {
                 S.game.pause = false;
@@ -668,8 +662,8 @@
                 btn.innerHTML = '<i class="fas fa-pause"></i> <span>PAUSAR</span>';
                 btn.className = "flex-grow h-10 rounded-lg btn-yellow text-sm flex items-center justify-center gap-2 shadow-lg uppercase tracking-wide";
                 
-                if(S.game.drawn.length === 0) draw();
-                S.game.timer = setInterval(draw, S.cfg.spd);
+                if(S.game.drawn.length === 0) loopDraw(); // Inicia
+                else loopDraw(); // Retoma
             } else { 
                 stop(); 
                 var btn = $('btn-play');
@@ -679,14 +673,22 @@
         }
 
         function stop() {
-            S.game.pause = true; clearInterval(S.game.timer);
+            S.game.pause = true; 
+            clearTimeout(S.game.timer); // Para o timeout recursivo
+        }
+
+        function loopDraw() {
+            if(S.game.pause || !S.game.active) return;
+            draw();
+            // Agenda o próximo sorteio APENAS após o atual ser processado
+            // spd + 1000ms de margem de animação/som
+            S.game.timer = setTimeout(loopDraw, S.cfg.spd); 
         }
 
         function draw() {
-            if(!S.game.active || (S.game.pause && S.game.timer)) return;
             if(S.game.drawn.length >= 75) { stop(); alert("Fim das pedras!"); return; }
 
-            // Frases aleatórias (se não houver alerta crítico)
+            // Frases aleatórias
             if(Math.random() < 0.2 && !$('game-msg').innerText.includes("⚠️")) {
                 $('game-msg').innerText = phrases[Math.floor(Math.random()*phrases.length)];
                 $('game-msg').className = "text-blue-100 text-[10px] uppercase tracking-widest font-bold";
@@ -696,7 +698,8 @@
             playSound('shaker');
 
             setTimeout(function() {
-                if(!S.game.active) return;
+                if(!S.game.active || S.game.pause) return; // Checa se pausou durante o som
+                
                 var n; do { n = Math.floor(Math.random()*75)+1; } while(S.game.drawn.indexOf(n) !== -1);
                 S.game.drawn.push(n);
 
@@ -712,12 +715,14 @@
                 // Animação CSS simples
                 ballEl.style.animation = "pulse-gold 1s infinite"; 
 
+                // Limitar histórico no DOM para não travar (apenas últimos 10 visíveis)
+                if(hist.children.length > 15) hist.removeChild(hist.lastChild);
                 hist.prepend(ballEl);
                 
                 playSound('draw');
                 speak(n.toString());
 
-                // Bot Logic (Simulate luck)
+                // Bot Logic
                 S.game.bots.forEach(function(b) {
                     if(b.needed > 0 && Math.random() < 0.22) { 
                         b.needed--;
@@ -731,7 +736,7 @@
                     doEnd(false, winnerBot.name);
                 }
 
-            }, 500); // Espera 500ms (tempo do som shaker) para mostrar a bola
+            }, 500); // Sincroniza com shaker
         }
 
         function hit(cIdx, i, n) {
@@ -743,8 +748,6 @@
                 el.classList.add('marked');
                 playSound('click');
                 checkWin(cIdx);
-                
-                // Check "Near Win" for Popup
                 checkNearWin(cIdx);
             } else {
                 el.classList.add('shake');
@@ -752,28 +755,22 @@
             }
         }
 
-        // NOVA FUNÇÃO: Checa se falta pouco para disparar o POPUP de Ansiedade
         function checkNearWin(cIdx) {
             var m = S.game.marks[cIdx];
             var r = $('sel-rule').value;
             var neededMin = 99;
 
             if(r === 'line') {
-                // Check rows, cols, diags
                 var lines = [];
                 for(var k=0; k<5; k++) {
                     lines.push([k*5, k*5+1, k*5+2, k*5+3, k*5+4]); // rows
                     lines.push([k, k+5, k+10, k+15, k+20]); // cols
                 }
-                // Diagonals? Usually regular bingo lines are rows/cols/diags. Let's simplify to rows/cols.
-                
-                // Find line with fewest missing
                 lines.forEach(function(line) {
                     var missing = line.filter(function(idx) { return !m[idx]; }).length;
                     if(missing < neededMin) neededMin = missing;
                 });
             } else {
-                // Full house
                 neededMin = m.filter(function(x) { return !x; }).length;
             }
 
@@ -790,7 +787,6 @@
             pop.classList.add('show');
             playSound('alert');
             
-            // Hide after 2s
             setTimeout(function() {
                 pop.classList.remove('show');
             }, 2000);
